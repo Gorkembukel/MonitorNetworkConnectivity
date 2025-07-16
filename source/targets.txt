@@ -1,6 +1,13 @@
 8.8.8.8
 1.1.1.1
 google.com
+mcdonalds.com
+facebook.com
 invalid.domain.com
 andasis.com
 burgerking.com
+turkiye.gov.tr
+ieee.org
+9.9.9.9
+4.2.2.2
+208.67.222.222

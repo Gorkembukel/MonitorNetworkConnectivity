@@ -2,6 +2,7 @@ from scapy_pings import ScapyPinger, is_valid_ip
 import time
 import os
 from PingStats import PingStats
+import matplotlib.pyplot as plt
 
 def read_targets_from_file(file_path):
     if not os.path.exists(file_path):
@@ -22,6 +23,12 @@ def read_targets_from_file(file_path):
 """
 ip kontrolü scapy_ping içinde kontrol edilmeli. Bunun scapy_ping için objesini oluşturuken içinde gerekli metodun koşturması sağlanabilir
 """
+def show_all_graphs(stats_map):
+    for i, (target, stats) in enumerate(stats_map.items()):
+        print(stats.summary())
+        stats.all_graph(block=False)  # show'u blocklamadan çağır
+    plt.show()  # Tüm grafikleri tek seferde aç
+
         
 def main():
     file_path = "targets.txt"
@@ -48,12 +55,14 @@ def main():
     control.run(True, stats_map)
     control.wait_for_all()
 
-
+    
     for target in targets:
         if is_valid_ip(target):
             print( stats_map[target].summary())
-            
-        
+            stats_map[target].all_graph()
+    
+    plt.show()
+
 
 
 if __name__ == "__main__":
