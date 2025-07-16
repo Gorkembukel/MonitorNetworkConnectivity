@@ -10,6 +10,7 @@ class PingStats:
     def __init__(self, target: str):
         self._target = target
         self._rtts: List[Optional[float]] = []  # RTT'ler, timeout için None tutulur
+        
     def __init__(self):
         self._rtts: List[Optional[float]] = []  # RTT'ler, timeout için None tutulur
 

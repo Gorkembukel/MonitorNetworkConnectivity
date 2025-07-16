@@ -8,27 +8,7 @@ from PingThread import PingThread
 from PingStats import PingStats
 
 
-class ScapyPinger:
-    def __init__(self, targets: list, duration: int = 10, interval_ms: int = 1000):
-        self.targets = targets
-        self.duration = duration
-        self.interval_ms = interval_ms
-        self.interval = interval_ms / 1000
-        self.threads = []  # 🔁 Paralel thread'leri saklamak için
-"""
-    def is_valid_ip(self, ip: str) -> bool:
-        try:
-            ipaddress.ip_address(ip)
-            return True
-        except ValueError:
-            pass
-        try:
-            socket.gethostbyname(ip)
-            return True
-        except Exception:
-            return False
-"""
-    def is_valid_ip(ip_str: str) -> bool:
+def is_valid_ip(ip_str: str) -> bool:
     # IP formatı geçerli mi?
     try:
         ipaddress.ip_address(ip_str)
@@ -43,13 +23,52 @@ class ScapyPinger:
     except socket.error:
         return False
 
+class ScapyPinger:
+    def __init__(self, targets: list, duration: int = 10, interval_ms: int = 1000):
+        self.targets = targets
+        self.duration = duration
+        self.interval_ms = interval_ms
+        self.interval = interval_ms / 1000
+        self.threads = []  # 🔁 Paralel thread'leri saklamak için
+    """
+    def is_valid_ip(self, ip: str) -> bool:
+        try:
+            ipaddress.ip_address(ip)
+            return True
+        except ValueError:
+            pass
+        try:
+            socket.gethostbyname(ip)
+            return True
+        except Exception:
+            return False
+    """
+    
+    
+    """
+    @staticmethod
+    def is_valid_ip(ip_str):
+        isValid = False;
+        try:
+            ipaddress.ip_address(ip_str)
+            isValid = True
+        except ValueError:
+            Bir işleme gerek yok
+        try:
+            socket.gethostbyname(ip_str)
+            return True        
+        except Exception as e:
+             Bir işleme gerek yok
+      
+        return isValid;
+"""
     def run(self, parallel: bool = False, stats_map: dict = None):
         """
         :param parallel: True ise PingThread ile paralel çalışır
         :param stats_map: her hedef için PingStats objesi tutan dict (key = target)
         """
         for target in self.targets:
-            if not self.is_valid_ip(target):
+            if not is_valid_ip(target):
                 print(f"🚫 Invalid target skipped: {target}")
                 continue
 

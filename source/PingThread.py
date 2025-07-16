@@ -5,18 +5,26 @@ from scapy.all import IP, ICMP, sr1
 from PingStats import PingStats
 
 class PingThread(threading.Thread):
-    def __init__(self, target, duration, interval_ms, stats: PingStats):
+    def __init__(self, target, duration, interval_ms):
         super().__init__()
         self.target = target
         self.duration = duration
         self.interval = interval_ms / 1000
         self.stop_time = time.time() + duration
-        self.stats = stats  # dışarıdan gelen istatistik nesnesi
+        self.stats = PingStats(target)  # istatistik nesnesi, her thread için oluşturulur.
 
+    def __init__(self, target, duration, interval_ms, stats):
+        super().__init__()
+        self.target = target
+        self.duration = duration
+        self.interval = interval_ms / 1000
+        self.stop_time = time.time() + duration
+        self.stats = stats
         stats.setTarget(target)
+        
 
     def run(self):
-        while time.time() < self.stop_time:
+        while time.time() < self.stop_time: 
             packet = IP(dst=self.target)/ICMP()
             send_time = time.time()
             try:
@@ -33,3 +41,7 @@ class PingThread(threading.Thread):
                 self.stats.add_result(None)
                 print(f"[{self.target}] ⚠️ Error: {e}")
             time.sleep(self.interval)
+
+    def getStats():
+        return self.stats
+    

@@ -1,4 +1,4 @@
-from ScapyPinger import scapy_pings as scapy
+from scapy_pings import ScapyPinger, is_valid_ip
 import time
 import os
 from PingStats import PingStats
@@ -26,36 +26,36 @@ ip kontrolü scapy_ping içinde kontrol edilmeli. Bunun scapy_ping için objesin
 def main():
     file_path = "targets.txt"
     targets = read_targets_from_file(file_path)
-    Data = PingStats()
+    
     scapy = ScapyPinger
 
     if not targets:
         print("📭 No targets found in txt file.")
         return
 
+
+    """
     for target in targets:        
-            scapy.timed_ping(target,Data, 20, 1,True)
-            time.sleep(1)  # Çok sık ping atmamak için
+        scapy.timed_ping(target,Data, 20, 1,True)
+        time.sleep(1)  # Çok sık ping atmamak için
+    """ 
+    stats_map = {}
+    for target in targets:
+        if is_valid_ip(target):
+            stats_map[target] = PingStats()
+
+    control = ScapyPinger(targets, 20, 1)
+    control.run(True, stats_map)
+    control.wait_for_all()
+
+
+    for target in targets:
+        if is_valid_ip(target):
+            print( stats_map[target].summary())
+            
         
-    print(Data.summary())
 
 
 if __name__ == "__main__":
     main()
 
-"""
-def is_valid_ip(ip_str):
-    isValid = False;
-    try:
-        ipaddress.ip_address(ip_str)
-        isValid = True
-    except ValueError:
-        """Bir işleme gerek yok"""
-    try:
-        socket.gethostbyname(ip_str)
-        return True        
-    except Exception as e:
-         """Bir işleme gerek yok"""
-  
-    return isValid;
-"""
