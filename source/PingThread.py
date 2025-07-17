@@ -2,7 +2,7 @@
 import threading
 import time
 from scapy.all import IP, ICMP, sr1
-from PingStats import PingStats
+from source.PingStats import PingStats
 
 class PingThread(threading.Thread):
     def __init__(self, target, duration, interval_ms):
