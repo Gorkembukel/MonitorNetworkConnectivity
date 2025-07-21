@@ -22,15 +22,18 @@ def is_valid_ip(ip_str: str) -> bool:
 
 
 class PingTask:
-    def __init__(self, target: str, duration: int, interval_ms: int):
+    def __init__(self, target: str, duration: int, interval_ms: int, isInfinite: bool):
         self.target = target
         self.duration = duration
         self.interval_ms = interval_ms
+        self.isInfinite = isInfinite
         self.stats = PingStats(target)
         self.thread = None  # PingThread bu
 
     def start(self):
         self.thread = PingThread(self.target, self.duration, self.interval_ms, self.stats)
+        if self.isInfinite:
+            self.thread.setWhileCondition(self.isInfinite)
         self.thread.start()
 
     def is_alive(self):
@@ -49,7 +52,7 @@ class ScapyPinger:
         self.tasks = {}  # key = target, value = PingTask
         self.target_dict = {}#her ip key olup istenen çalışma parametreleri value olacak
         self.stats_list = []
-    def add_task(self, target: str, duration: int = 10, interval_ms: int = 1000):
+    def add_task(self, target: str,isInfinite: bool, duration: int = 10, interval_ms: int = 1000):
         if not is_valid_ip(target):
             print(f"🚫 Invalid target skipped: {target}")
             return False  
@@ -59,7 +62,7 @@ class ScapyPinger:
             print(f"⚠️ Target already exists: {target}")
             return False
 
-        task = PingTask(target, duration, interval_ms)
+        task = PingTask(target, duration, interval_ms, isInfinite=isInfinite)
         self.tasks[target] = task
         return True
     def target_dict_to_add_task(self):
@@ -68,18 +71,21 @@ class ScapyPinger:
             self.add_task(
                 target=target,
                 duration=config['duration'],
-                interval_ms=config['interval_ms']
+                interval_ms=config['interval_ms'],
+                isInfinite=config['isInfinite']
             )
 
 
-    def add_targetList(self, targets: list, interval_ms: int, duration: int, byte_size: int):
+    def add_targetList(self, targets: list, interval_ms: int, duration: int, byte_size: int, isInfinite: bool):
         
 
         for target in targets:
             self.target_dict[target] = {
                 'interval_ms': interval_ms,
                 'duration': duration,
-                'byteSize': byte_size
+                'byteSize': byte_size,
+                'isInfinite': isInfinite
+
             }
 
 
@@ -106,15 +112,11 @@ class ScapyPinger:
             self.tasks[target].start()
 
     def find_all_stats(self):
-        """
-        Oluşturulmuş tüm PingTask'ların PingStats nesnelerini döndürür.
-        :return: List[PingStats]
-        """
-        
+        self.stats_list = []  # ❗ Temizle
         for task in self.tasks.values():
-            stats = task.stats
-            self.stats_list.append(stats)
-        return self.stats_list  
+            self.stats_list.append(task.stats)
+        return self.stats_list
+
     def get_stats_map(self):
         """
         Her hedef için PingStats nesnesini target -> PingStats dict olarak döndürür.
@@ -127,4 +129,6 @@ class ScapyPinger:
     
         for stat in self.stats_list:
             stat.all_graph(True)
+    
+
 

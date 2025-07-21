@@ -2,7 +2,8 @@ import sys,time
 from dataclasses import dataclass, field
 from typing import List, Dict
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog,QTableWidgetItem
-from PyQt5.QtCore import QTimer,QThread, pyqtSignal, QColor
+from PyQt5.QtCore import QTimer,QThread, pyqtSignal
+from PyQt5.QtGui import QColor
 from QTDesigns.MainWindow import Ui_MonitorNetWorkConnectivity
 from QTDesigns.PingWindow import Ui_pingWindow
 from source.PingStats import get_data_keys
@@ -21,15 +22,22 @@ class Pass_Data_ScapyPinger:#veri aktarmak için container
     target_dict: Dict[str, Dict[str, int]] = field(default_factory=dict)
 
 
-class PingWindow(QDialog):  # Yeni pencere QDialog veya QMainWindow olabilir
+class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
     def __init__(self):
         super().__init__()
         self.ui = Ui_pingWindow()
         self.ui.setupUi(self)
         self.data = Pass_Data_ScapyPinger()
+        self.isInfinite = False
          # Butona tıklanınca işlem yapılacak
         self.ui.pushButton.clicked.connect(self.extract_targets)
-        
+        self.ui.pushButton_durationUnlimited.clicked.connect(self.setIsInfinite)
+    def setIsInfinite(self):    
+        if self.isInfinite:
+            self.isInfinite =False
+        else:
+            self.isInfinite = True
+
 
 
     def extract_targets(self):
@@ -48,11 +56,11 @@ class PingWindow(QDialog):  # Yeni pencere QDialog veya QMainWindow olabilir
         byte_size = self.ui.spinBox_byte.value()
         interval_ms = self.ui.spinBox_interval.value()
         duration = self.ui.spinBox_duration.value()
-
+        isInfinite = self.isInfinite
 
         
 
-        scapyPinger_global.add_targetList(targets=targets, interval_ms=interval_ms, duration= duration, byte_size= byte_size)
+        scapyPinger_global.add_targetList(targets=targets, interval_ms=interval_ms, duration= duration, byte_size= byte_size,isInfinite=isInfinite)
         scapyPinger_global.target_dict_to_add_task()
 
 
@@ -86,21 +94,23 @@ class MainWindow(QMainWindow):
             summary = stat.summary()
             target = summary["target"]
 
-            # 🔁 Eğer target daha önce tabloya eklenmişse, sadece hücreleri güncelle
             if target in self.target_to_row:
                 row = self.target_to_row[target]
             else:
-                # ➕ Yeni target, yeni satır ekle
                 row = self.ui.tableTarget.rowCount()
                 self.ui.tableTarget.insertRow(row)
                 self.target_to_row[target] = row
 
-            # 🔁 Her sütunu güncelle
+            # ✅ Renk sadece bir kere belirleniyor
+            last_result = summary.get("last_result", "")
+            color = QColor(200, 255, 200) if last_result == "Success" else QColor(255, 200, 200)
+
+            # 🔁 Hem hücreyi doldur, hem rengini ver
             for col, key in enumerate(headers):
                 value = summary.get(key, "")
                 item = QTableWidgetItem(str(value))
+                item.setBackground(color)
                 self.ui.tableTarget.setItem(row, col, item)
-
 
 
     def update_table(self, stats_list):
