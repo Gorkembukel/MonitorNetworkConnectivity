@@ -2,25 +2,16 @@ import sys,time
 from dataclasses import dataclass, field
 from typing import List, Dict
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog,QTableWidgetItem
-from PyQt5.QtCore import QTimer,QThread, pyqtSignal
+from PyQt5.QtCore import QTimer,QThread, pyqtSignal, QColor
 from QTDesigns.MainWindow import Ui_MonitorNetWorkConnectivity
 from QTDesigns.PingWindow import Ui_pingWindow
 from source.PingStats import get_data_keys
 from source.PingThreadController import ScapyPinger
 
+
 scapyPinger_global = ScapyPinger()
-class StatsWorker(QThread):
-    stats_ready = pyqtSignal(list)
-
-    def run(self):
-        while True:
-            stats = scapyPinger_global.find_all_stats()
-            self.stats_ready.emit(stats)
-            time.sleep(1 / 60)  # ≈ 60 FPS
-
-
-
-
+stats_list_global = scapyPinger_global.find_all_stats()
+headers = List
 @dataclass
 class Pass_Data_ScapyPinger:#veri aktarmak için container
     targets: List[str] = field(default_factory=list)
@@ -42,6 +33,10 @@ class PingWindow(QDialog):  # Yeni pencere QDialog veya QMainWindow olabilir
 
 
     def extract_targets(self):
+        global headers 
+        global scapyPinger_global
+
+        headers = list(get_data_keys())
         # 1️⃣ PlainTextEdit içeriğini al
         text = self.ui.plainTextEdit.toPlainText()
         # 2️⃣ Satırları ayır ve boş olmayanları döndür
@@ -77,20 +72,17 @@ class MainWindow(QMainWindow):
         self.ui.pingWindowButton.clicked.connect(self.open_pingWindow)
         self.buttonPingBaslat.clicked.connect(self.set_scapyPinger)
 
-        self.worker = StatsWorker()
-        self.worker.stats_ready.connect(self.update_table)
-        self.worker.start()
-        """
+        
         self.stats_timer = QTimer(self)
         self.stats_timer.setInterval(16.6)  # 1000ms = 1 saniye
         self.stats_timer.timeout.connect(self.update_Stats)
         self.stats_timer.start()
-        """
+        
     def update_Stats(self):
-        stats_list = scapyPinger_global.find_all_stats()
-        headers = list(get_data_keys())
+        global stats_list_global
+        
 
-        for stat in stats_list:
+        for stat in stats_list_global:
             summary = stat.summary()
             target = summary["target"]
 
@@ -108,6 +100,9 @@ class MainWindow(QMainWindow):
                 value = summary.get(key, "")
                 item = QTableWidgetItem(str(value))
                 self.ui.tableTarget.setItem(row, col, item)
+
+
+
     def update_table(self, stats_list):
         headers = list(get_data_keys())
         for stat in stats_list:
@@ -133,8 +128,9 @@ class MainWindow(QMainWindow):
         self.ui.tableTarget.setColumnCount(len(headers))
         self.ui.tableTarget.setHorizontalHeaderLabels(headers)
     def set_scapyPinger(self):
-        
+        global scapyPinger_global,stats_list_global
         scapyPinger_global.start_all()
+        stats_list_global = scapyPinger_global.find_all_stats()
 
 
     def open_pingWindow(self):
