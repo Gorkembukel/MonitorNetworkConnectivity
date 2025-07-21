@@ -42,6 +42,6 @@ class PingThread(threading.Thread):
                 print(f"[{self.target}] ⚠️ Error: {e}")
             time.sleep(self.interval)
 
-    def getStats():
+    def getStats(self):
         return self.stats
     

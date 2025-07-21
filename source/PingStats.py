@@ -1,6 +1,22 @@
 from typing import List, Optional
 from statistics import mean, stdev
 import matplotlib.pyplot as plt
+dict_of_data_keys = {# buradaki keyler tablodaki sütun başlıkları için kullanılacak. Ekleyeceğiniz veri varsa burada başlığını girerseniz grafik güncellenir
+            "target": "",
+            "sent": "",
+            "received": "",
+            "failed": "",
+            "success_rate": "",
+            "avg_rtt": "",
+            "min_rtt": "",
+            "max_rtt": "",
+            "jitter": "",
+            "last_result": ""
+        }
+
+def get_data_keys():
+        return dict_of_data_keys.keys()
+
 
 class PingStats:
     def __init__(self, target: str):
@@ -59,6 +75,8 @@ class PingStats:
             "jitter": self.jitter,
             "last_result": self.last_result
         }
+    
+    
 
     #grafik metotları
     def plot_rtt_series(self, ax=None):
@@ -138,3 +156,12 @@ class PingStats:
     def show_all():
         """Elde bekleyen tüm grafikleri aynı anda gösterir"""
         plt.show()
+
+
+
+
+
+
+
+if __name__ == '__main__':
+    print(get_data_keys() )
