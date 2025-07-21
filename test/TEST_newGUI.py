@@ -1,22 +1,149 @@
-import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow
+import sys,time
+from dataclasses import dataclass, field
+from typing import List, Dict
+from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog,QTableWidgetItem
+from PyQt5.QtCore import QTimer,QThread, pyqtSignal
 from QTDesigns.MainWindow import Ui_MonitorNetWorkConnectivity
+from QTDesigns.PingWindow import Ui_pingWindow
 from source.PingStats import get_data_keys
+from source.PingThreadController import ScapyPinger
 
+scapyPinger_global = ScapyPinger()
+class StatsWorker(QThread):
+    stats_ready = pyqtSignal(list)
+
+    def run(self):
+        while True:
+            stats = scapyPinger_global.find_all_stats()
+            self.stats_ready.emit(stats)
+            time.sleep(1 / 60)  # ≈ 60 FPS
+
+
+
+
+@dataclass
+class Pass_Data_ScapyPinger:#veri aktarmak için container
+    targets: List[str] = field(default_factory=list)
+    interval_ms: int = 1000
+    duration: int = 10
+    byte_size: int = 64
+    target_dict: Dict[str, Dict[str, int]] = field(default_factory=dict)
+
+
+class PingWindow(QDialog):  # Yeni pencere QDialog veya QMainWindow olabilir
+    def __init__(self):
+        super().__init__()
+        self.ui = Ui_pingWindow()
+        self.ui.setupUi(self)
+        self.data = Pass_Data_ScapyPinger()
+         # Butona tıklanınca işlem yapılacak
+        self.ui.pushButton.clicked.connect(self.extract_targets)
+        
+
+
+    def extract_targets(self):
+        # 1️⃣ PlainTextEdit içeriğini al
+        text = self.ui.plainTextEdit.toPlainText()
+        # 2️⃣ Satırları ayır ve boş olmayanları döndür
+        targets = [line.strip() for line in text.splitlines() if line.strip()]
+
+        self.data.targets = targets#TODO deepcopy gerekebilir mi?
+
+         # 2️⃣ SpinBox'lardan parametreleri al
+        byte_size = self.ui.spinBox_byte.value()
+        interval_ms = self.ui.spinBox_interval.value()
+        duration = self.ui.spinBox_duration.value()
+
+
+        
+
+        scapyPinger_global.add_targetList(targets=targets, interval_ms=interval_ms, duration= duration, byte_size= byte_size)
+        scapyPinger_global.target_dict_to_add_task()
+
+
+
+        
 
 
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.target_to_row = {}#table için primary key
         self.ui = Ui_MonitorNetWorkConnectivity()
         self.ui.setupUi(self)
         self.ui.tableTarget
         self.set_table_headers()
+        self.buttonPingBaslat = self.ui.pushButton_pingBaslat
+        self.ui.pingWindowButton.clicked.connect(self.open_pingWindow)
+        self.buttonPingBaslat.clicked.connect(self.set_scapyPinger)
+
+        self.worker = StatsWorker()
+        self.worker.stats_ready.connect(self.update_table)
+        self.worker.start()
+        """
+        self.stats_timer = QTimer(self)
+        self.stats_timer.setInterval(16.6)  # 1000ms = 1 saniye
+        self.stats_timer.timeout.connect(self.update_Stats)
+        self.stats_timer.start()
+        """
+    def update_Stats(self):
+        stats_list = scapyPinger_global.find_all_stats()
+        headers = list(get_data_keys())
+
+        for stat in stats_list:
+            summary = stat.summary()
+            target = summary["target"]
+
+            # 🔁 Eğer target daha önce tabloya eklenmişse, sadece hücreleri güncelle
+            if target in self.target_to_row:
+                row = self.target_to_row[target]
+            else:
+                # ➕ Yeni target, yeni satır ekle
+                row = self.ui.tableTarget.rowCount()
+                self.ui.tableTarget.insertRow(row)
+                self.target_to_row[target] = row
+
+            # 🔁 Her sütunu güncelle
+            for col, key in enumerate(headers):
+                value = summary.get(key, "")
+                item = QTableWidgetItem(str(value))
+                self.ui.tableTarget.setItem(row, col, item)
+    def update_table(self, stats_list):
+        headers = list(get_data_keys())
+        for stat in stats_list:
+            summary = stat.summary()
+            target = summary["target"]
+
+            if target in self.target_to_row:
+                row = self.target_to_row[target]
+            else:
+                row = self.ui.tableTarget.rowCount()
+                self.ui.tableTarget.insertRow(row)
+                self.target_to_row[target] = row
+
+            for col, key in enumerate(headers):
+                value = summary.get(key, "")
+                item = QTableWidgetItem(str(value))
+                self.ui.tableTarget.setItem(row, col, item)
+
+
 
     def set_table_headers(self):
         headers = list(get_data_keys())
         self.ui.tableTarget.setColumnCount(len(headers))
         self.ui.tableTarget.setHorizontalHeaderLabels(headers)
+    def set_scapyPinger(self):
+        
+        scapyPinger_global.start_all()
+
+
+    def open_pingWindow(self):
+        self.pingWindow = PingWindow()
+        self.pingWindow.show()
+
+    
+    def add_pings(self):
+        pass
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)

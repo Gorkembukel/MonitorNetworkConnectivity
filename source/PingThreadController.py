@@ -47,19 +47,41 @@ class PingTask:
 class ScapyPinger:
     def __init__(self):
         self.tasks = {}  # key = target, value = PingTask
+        self.target_dict = {}#her ip key olup istenen çalışma parametreleri value olacak
         self.stats_list = []
-    def add_target(self, target: str, duration: int = 10, interval_ms: int = 1000):
+    def add_task(self, target: str, duration: int = 10, interval_ms: int = 1000):
         if not is_valid_ip(target):
             print(f"🚫 Invalid target skipped: {target}")
-            return False
+            return False  
+    
 
-        if target in self.tasks:
+        if target in self.tasks:#TODO bu kaldırılabilir belki
             print(f"⚠️ Target already exists: {target}")
             return False
 
         task = PingTask(target, duration, interval_ms)
         self.tasks[target] = task
         return True
+    def target_dict_to_add_task(self):
+        targets = self.target_dict
+        for target, config in self.target_dict.items():
+            self.add_task(
+                target=target,
+                duration=config['duration'],
+                interval_ms=config['interval_ms']
+            )
+
+
+    def add_targetList(self, targets: list, interval_ms: int, duration: int, byte_size: int):
+        
+
+        for target in targets:
+            self.target_dict[target] = {
+                'interval_ms': interval_ms,
+                'duration': duration,
+                'byteSize': byte_size
+            }
+
 
     def start_all(self):
         for task in self.tasks.values():
@@ -80,7 +102,7 @@ class ScapyPinger:
         return self.tasks.get(target)
 
     def add_and_start(self, target: str, duration: int = 10, interval_ms: int = 1000):
-        if self.add_target(target, duration, interval_ms):
+        if self.task(target, duration, interval_ms):
             self.tasks[target].start()
 
     def find_all_stats(self):
