@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'MainWindow.ui'
+# Form implementation generated from reading ui file 'QTDesigns/MainWindow.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
 #
@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MonitorNetWorkConnectivity(object):
     def setupUi(self, MonitorNetWorkConnectivity):
         MonitorNetWorkConnectivity.setObjectName("MonitorNetWorkConnectivity")
-        MonitorNetWorkConnectivity.resize(800, 600)
+        MonitorNetWorkConnectivity.resize(1189, 600)
         self.centralwidget = QtWidgets.QWidget(MonitorNetWorkConnectivity)
         self.centralwidget.setObjectName("centralwidget")
         self.widget = QtWidgets.QWidget(self.centralwidget)
@@ -28,7 +28,7 @@ class Ui_MonitorNetWorkConnectivity(object):
         self.pushButton_pingBaslat.setObjectName("pushButton_pingBaslat")
         MonitorNetWorkConnectivity.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MonitorNetWorkConnectivity)
-        self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 22))
+        self.menubar.setGeometry(QtCore.QRect(0, 0, 1189, 22))
         self.menubar.setObjectName("menubar")
         MonitorNetWorkConnectivity.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MonitorNetWorkConnectivity)
