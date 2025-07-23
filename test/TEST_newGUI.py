@@ -79,8 +79,9 @@ class MainWindow(QMainWindow):
         self.buttonPingBaslat = self.ui.pushButton_pingBaslat
         self.ui.pingWindowButton.clicked.connect(self.open_pingWindow)
         self.buttonPingBaslat.clicked.connect(self.set_scapyPinger)
-
+        self.ui.pushButton_pingDurdur.setEnabled(False)
         
+        self.ui.pushButton_pingDurdur.clicked.connect(self.stopAllThreads)
         self.stats_timer = QTimer(self)
         self.stats_timer.setInterval(16.6)  # 1000ms = 1 saniye
         self.stats_timer.timeout.connect(self.update_Stats)
@@ -88,7 +89,7 @@ class MainWindow(QMainWindow):
         
     def update_Stats(self):
         global stats_list_global
-        
+        global headers
 
         for stat in stats_list_global:
             summary = stat.summary()
@@ -112,7 +113,14 @@ class MainWindow(QMainWindow):
                 item.setBackground(color)
                 self.ui.tableTarget.setItem(row, col, item)
 
+        print(f" aktiiiiiiiiiiiiiif threaaaad {scapyPinger_global.get_active_count()}")
+        if scapyPinger_global.get_active_count() == 0:
+            self.ui.pushButton_pingDurdur.setEnabled(False)
+        else:
+            self.ui.pushButton_pingDurdur.setEnabled(True)
 
+    def stopAllThreads(self):
+        scapyPinger_global.stop_All()
     def update_table(self, stats_list):
         headers = list(get_data_keys())
         for stat in stats_list:
@@ -141,6 +149,9 @@ class MainWindow(QMainWindow):
         global scapyPinger_global,stats_list_global
         scapyPinger_global.start_all()
         stats_list_global = scapyPinger_global.find_all_stats()
+        
+        
+            
 
 
     def open_pingWindow(self):

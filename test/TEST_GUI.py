@@ -93,7 +93,7 @@ def main():
     pinger = ScapyPinger()  # Yeni sistemde: boş başlatılır
     # Hedefleri ekle (her biri ayrı task olacak)
     for target in targets:
-        added = pinger.add_target(target, duration=20, interval_ms=1)
+        added = pinger.add_task(target, duration=20, interval_ms=1)
         if added:
             print(f"✅ Eklendi: {target}")
         else:

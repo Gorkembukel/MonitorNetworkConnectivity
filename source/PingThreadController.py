@@ -35,7 +35,9 @@ class PingTask:
         if self.isInfinite:
             self.thread.setWhileCondition(self.isInfinite)
         self.thread.start()
-
+    def stop(self):
+        if self.thread:
+            self.thread.stop()
     def is_alive(self):
         return self.thread.is_alive() if self.thread else False
 
@@ -130,5 +132,7 @@ class ScapyPinger:
         for stat in self.stats_list:
             stat.all_graph(True)
     
-
+    def stop_All(self):
+        for task in self.tasks.values():  #  sadece value'larla ilgileniyoruz
+            task.stop()
 
