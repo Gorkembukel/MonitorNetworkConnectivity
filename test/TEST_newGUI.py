@@ -23,9 +23,11 @@ class Pass_Data_ScapyPinger:#veri aktarmak için container
 
 
 class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
-    def __init__(self):
-        super().__init__()
+    pingTargetsReady = pyqtSignal()#
+    def __init__(self, parent= None):
+        super().__init__(parent)
         self.ui = Ui_pingWindow()
+        self.parent = parent
         self.ui.setupUi(self)
         self.data = Pass_Data_ScapyPinger()
         self.isInfinite = False
@@ -43,7 +45,7 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
     def extract_targets(self):
         global headers 
         global scapyPinger_global
-
+        global stats_list_global
         headers = list(get_data_keys())
         # 1️⃣ PlainTextEdit içeriğini al
         text = self.ui.plainTextEdit.toPlainText()
@@ -59,10 +61,12 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
         isInfinite = self.isInfinite
 
         
+        
 
         scapyPinger_global.add_targetList(targets=targets, interval_ms=interval_ms, duration= duration, byte_size= byte_size,isInfinite=isInfinite)
         scapyPinger_global.target_dict_to_add_task()
-
+        stats_list_global = scapyPinger_global.find_all_stats()
+        self.pingTargetsReady.emit()
 
 
         
@@ -155,8 +159,10 @@ class MainWindow(QMainWindow):
 
 
     def open_pingWindow(self):
-        self.pingWindow = PingWindow()
+        self.pingWindow = PingWindow(self)
+        self.pingWindow.pingTargetsReady.connect(self.update_Stats)
         self.pingWindow.show()
+        
 
     
     def add_pings(self):
