@@ -23,7 +23,7 @@ class Pass_Data_ScapyPinger:#veri aktarmak için container
 
 
 class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
-    pingTargetsReady = pyqtSignal()#
+    pingaddressReady = pyqtSignal()#
     def __init__(self, parent= None):
         super().__init__(parent)
         self.ui = Ui_pingWindow()
@@ -32,7 +32,7 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
         self.data = Pass_Data_ScapyPinger()
         self.isInfinite = False
          # Butona tıklanınca işlem yapılacak
-        self.ui.pushButton.clicked.connect(self.extract_targets)
+        self.ui.pushButton.clicked.connect(self.extract_addresses)
         self.ui.pushButton_durationUnlimited.clicked.connect(self.setIsInfinite)
     def setIsInfinite(self):    
         if self.isInfinite:
@@ -42,7 +42,7 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
 
 
 
-    def extract_targets(self):
+    def extract_addresses(self):
         global headers 
         global scapyPinger_global
         global stats_list_global
@@ -50,23 +50,33 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
         # 1️⃣ PlainTextEdit içeriğini al
         text = self.ui.plainTextEdit.toPlainText()
         # 2️⃣ Satırları ayır ve boş olmayanları döndür
-        targets = [line.strip() for line in text.splitlines() if line.strip()]
+        addresses = [line.strip() for line in text.splitlines() if line.strip()]
 
-        self.data.targets = targets#TODO deepcopy gerekebilir mi?
+        self.data.addresses = addresses#TODO deepcopy gerekebilir mi?
 
-         # 2️⃣ SpinBox'lardan parametreleri al
-        byte_size = self.ui.spinBox_byte.value()
-        interval_ms = self.ui.spinBox_interval.value()
-        duration = self.ui.spinBox_duration.value()
-        isInfinite = self.isInfinite
 
+        payload_size = None
+        interval_ms = None
+        duration = None
+
+        isInfinite = None
+
+         # 2️⃣ SpinBox'lardan parametreleri al. 0 ise almaz default parametrelerde çalışssın diye
+        if self.ui.spinBox_byte.value():
+            payload_size = self.ui.spinBox_byte.value()
+
+        if self.ui.spinBox_interval.value():
+            interval_ms = self.ui.spinBox_interval.value()
+
+        if self.ui.spinBox_duration.value():
+            duration = self.ui.spinBox_duration.value()
+                
         
-        
 
-        scapyPinger_global.add_targetList(targets=targets, interval_ms=interval_ms, duration= duration, byte_size= byte_size,isInfinite=isInfinite)
-        scapyPinger_global.target_dict_to_add_task()
+        scapyPinger_global.add_addressList(addresses=addresses, interval_ms=interval_ms,count =1, duration= duration, payload_size= payload_size,isInfinite=isInfinite,privileged=True)
+        
         stats_list_global = scapyPinger_global.find_all_stats()
-        self.pingTargetsReady.emit()
+        self.pingaddressReady.emit()
 
 
         
@@ -75,7 +85,7 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
 class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.target_to_row = {}#table için primary key
+        self.address_to_row = {}#table için primary key
         self.ui = Ui_MonitorNetWorkConnectivity()
         self.ui.setupUi(self)
         self.ui.tableTarget
@@ -83,7 +93,8 @@ class MainWindow(QMainWindow):
         self.buttonPingBaslat = self.ui.pushButton_pingBaslat
         self.ui.pingWindowButton.clicked.connect(self.open_pingWindow)
         self.buttonPingBaslat.clicked.connect(self.set_scapyPinger)
-        self.ui.pushButton_pingDurdur.setEnabled(False)
+        self.ui.pushButton_pingDurdur.setEnabled(False) 
+        self.threadCountBox = self.ui.spinBox_threadCount
         
         self.ui.pushButton_pingDurdur.clicked.connect(self.stopAllThreads)
         self.stats_timer = QTimer(self)
@@ -97,14 +108,14 @@ class MainWindow(QMainWindow):
 
         for stat in stats_list_global:
             summary = stat.summary()
-            target = summary["target"]
+            address = summary["address"]
 
-            if target in self.target_to_row:
-                row = self.target_to_row[target]
+            if address in self.address_to_row:
+                row = self.address_to_row[address]
             else:
                 row = self.ui.tableTarget.rowCount()
                 self.ui.tableTarget.insertRow(row)
-                self.target_to_row[target] = row
+                self.address_to_row[address] = row
 
             # ✅ Renk sadece bir kere belirleniyor
             last_result = summary.get("last_result", "")
@@ -117,8 +128,10 @@ class MainWindow(QMainWindow):
                 item.setBackground(color)
                 self.ui.tableTarget.setItem(row, col, item)
 
-        print(f" aktiiiiiiiiiiiiiif threaaaad {scapyPinger_global.get_active_count()}")
-        if scapyPinger_global.get_active_count() == 0:
+        #print(f" aktiiiiiiiiiiiiiif threaaaad {scapyPinger_global.get_active_count()}")
+        threadCountNow = scapyPinger_global.get_active_count() 
+        self.threadCountBox.setValue(threadCountNow)
+        if threadCountNow == 0:
             self.ui.pushButton_pingDurdur.setEnabled(False)
         else:
             self.ui.pushButton_pingDurdur.setEnabled(True)
@@ -160,7 +173,7 @@ class MainWindow(QMainWindow):
 
     def open_pingWindow(self):
         self.pingWindow = PingWindow(self)
-        self.pingWindow.pingTargetsReady.connect(self.update_Stats)
+        self.pingWindow.pingaddressReady.connect(self.update_Stats)
         self.pingWindow.show()
         
 

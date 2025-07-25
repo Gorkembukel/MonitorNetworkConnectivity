@@ -1,9 +1,9 @@
 from typing import List, Optional
 from statistics import mean, stdev
 import matplotlib.pyplot as plt
-import time
+import time, threading
 dict_of_data_keys = {# buradaki keyler tablodaki sütun başlıkları için kullanılacak. Ekleyeceğiniz veri varsa burada başlığını girerseniz grafik güncellenir
-            "target": "",
+            "address": "",
             "sent": "",
             "received": "",
             "failed": "",
@@ -13,7 +13,7 @@ dict_of_data_keys = {# buradaki keyler tablodaki sütun başlıkları için kull
             "max_rtt": "",
             "jitter": "",
             "last_result": "",
-            "time_per_ping":""
+            "threadLoopTime":""
         }
 
 def get_data_keys():
@@ -21,21 +21,24 @@ def get_data_keys():
 
 
 class PingStats:
-    def __init__(self, target: str):
-        self._target = target
+    def __init__(self, address: str):
+        self._address = address
+        self.threadlooptime=0.0
         self._rttList: List[Optional[float]] = []
         self.initTime = time.time()#TODO gereksiz olabilir
         self.addTime: float
+        self._lock = threading.Lock() 
     """
     def __init__(self):
         self._rttList: List[Optional[float]] = []  # RTT'ler, timeout için None tutulur
     """
     def add_result(self, rtt: Optional[float]):
-        self._rttList.append(rtt)
-        self.addTime = time.time()
+        with self._lock:
+            self._rttList.append(rtt)
+            self.addTime = time.time()
 
     @property
-    def target(self): return self._target
+    def address(self): return self._address
     @property
     def sent(self): return len(self._rttList)
     @property
@@ -65,24 +68,22 @@ class PingStats:
         if not self._rttList: return "No Data"
         return "Success" if self._rttList[-1] is not None else "Timeout"
     @property
-    def time_per_ping(self):
-        int = 20
-        sumRtt = 0.0
-        for rtt in self._rttList[-int:]:
-            if rtt:
-                sumRtt += rtt
-        result = round(sumRtt/int,2)
+    def threadLoopTime(self):
         
     
-        return (result)
+        return round(self.threadlooptime,2)
         
         
-    def setTarget(self,target):
-        self._target = target
+    def setaddress(self,address):
+        self._address = address
+
+    def updateThreadLoopTime(self,ms):
+        with self._lock:
+            self.threadlooptime = ms
 
     def summary(self):
         return {
-            "target": self.target,
+            "address": self.address,
             "sent": self.sent,
             "received": self.received,
             "failed": self.failed,
@@ -92,7 +93,7 @@ class PingStats:
             "max_rtt": self.max_rtt,
             "jitter": self.jitter,
             "last_result": self.last_result,
-            "time_per_ping": self.time_per_ping
+            "threadLoopTime": self.threadLoopTime
         }
     
     
@@ -101,7 +102,7 @@ class PingStats:
     def plot_rtt_series(self, ax=None):
         valid_rttList = [r for r in self._rttList if r is not None]
         if not valid_rttList:
-            print(f"[{self._target}] No RTT data for series plot.")
+            print(f"[{self._address}] No RTT data for series plot.")
             return
 
         if ax is None:
@@ -117,7 +118,7 @@ class PingStats:
     def plot_rtt_box(self, ax=None):
         valid_rttList = [r for r in self._rttList if r is not None]
         if not valid_rttList:
-            print(f"[{self._target}] No RTT data for boxplot.")
+            print(f"[{self._address}] No RTT data for boxplot.")
             return
 
         if ax is None:
@@ -130,7 +131,7 @@ class PingStats:
 
     def plot_success_ratio(self, ax=None):
         if self.sent == 0:
-            print(f"[{self._target}] No pings sent.")
+            print(f"[{self._address}] No pings sent.")
             return
 
         if ax is None:
@@ -153,14 +154,14 @@ class PingStats:
 
     # ✅ Hepsini tek bir sayfada çizmek için wrapper
     def all_graph(self, show=True):
-        print(f"📊 Generating combined graph for: {self.target}")
+        print(f"📊 Generating combined graph for: {self.address}")
         valid_rttList = [r for r in self._rttList if r is not None]
         if not valid_rttList:
             print("No RTT data available.")
             return
 
         fig, axs = plt.subplots(2, 2, figsize=(12, 8))
-        fig.suptitle(f"Ping Statistics for {self._target}", fontsize=16)
+        fig.suptitle(f"Ping Statistics for {self._address}", fontsize=16)
 
         self.plot_rtt_series(ax=axs[0, 0])
         self.plot_rtt_box(ax=axs[0, 1])
