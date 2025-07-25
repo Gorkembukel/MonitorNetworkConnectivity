@@ -26,10 +26,7 @@ class PingStats:
         self._rttList: List[Optional[float]] = []
         self.initTime = time.time()#TODO gereksiz olabilir
         self.addTime: float
-    """
-    def __init__(self):
-        self._rttList: List[Optional[float]] = []  # RTT'ler, timeout için None tutulur
-    """
+    
     def add_result(self, rtt: Optional[float]):
         self._rttList.append(rtt)
         self.addTime = time.time()
@@ -178,7 +175,8 @@ class PingStats:
 
 
 
-
+    def __del__(self):
+        print(f"[{self}] PingStats objesi siliniyor.")
 
 
 

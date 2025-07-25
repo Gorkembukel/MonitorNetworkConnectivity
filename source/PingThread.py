@@ -17,30 +17,39 @@ class PingThread(threading.Thread):
         self.stop_time = time.time() + duration
         self.stats = stats
         self.isInfinite = False
+        self._pause_start_time = 0
         stats.setTarget(target)
-        
+        self.isKill=False #threadi komple kapatır
     def _should_continue(self):
         return self.isInfinite or time.time() < self.stop_time
     def run(self):
+        
+        while not self.isKill:#TODO bu while hep dönecek, kill komutu gelene kadar threadi uykuda tutacak
+            while self._should_continue() and not self._stop_event.is_set():#TODO burada sürekli metot çağırılıyor performans için değiştirilebilir
+                # icmplib yöntemi
+                send_time = time.time()
+                print(f"intervaaaaaaaaaaaaaaaaaal {self.interval}")
+                result = icmp_ping(self.target, count=1, timeout=1, interval=self.interval,privileged=False)
+                if result.is_alive:
+                    #rtt = result.avg_rtt
+                    recv_time = time.time()
+                    rtt = result._rtts.pop()
+                    
+                    self.stats.add_result(rtt)
+                    print(f"[{self.target}] ✅ {rtt:.2f} ms (icmplib)")
+                else:
+                    self.stats.add_result(None)
+                    print(f"[{self.target}] ❌ Timeout (icmplib)")
+                time.sleep(self.interval)              
+            if not self._should_continue() :# thread işlemini bitirip durdu ise threadi kapatır, kullanıcı tarafından durduruldu ise uykuya dalar
+                self.isKill = True
+                break
+                #TODO durduktan sonra zaman kaybı sorunu, stop metodu içinde çözülmüştür
+            
+            #thread durduruldu geri uyandırlımayı bekliyor
 
-        while self._should_continue() and not self._stop_event.is_set():#TODO burada sürekli metot çağırılıyor performans için değiştirilebilir
-            # icmplib yöntemi
-            send_time = time.time()
-            print(f"intervaaaaaaaaaaaaaaaaaal {self.interval}")
-            result = icmp_ping(self.target, count=1, timeout=1, interval=self.interval,privileged=False)
-            if result.is_alive:
-                #rtt = result.avg_rtt
-                recv_time = time.time()
-                rtt = (recv_time - send_time) * 1000
-                
-                self.stats.add_result(rtt)
-                print(f"[{self.target}] ✅ {rtt:.2f} ms (icmplib)")
-            else:
-                self.stats.add_result(None)
-                print(f"[{self.target}] ❌ Timeout (icmplib)")
-            time.sleep(self.interval)   
 
-            #TODO durduktan sonra zaman kaybı
+            time.sleep(2)#FIXME uzun time sleep
 
     def getStats(self):
         return self.stats
@@ -50,9 +59,15 @@ class PingThread(threading.Thread):
 
     def getWhileCondition(self):
         return self.whileCondition
-    def stop(self):
-        if not self._stop_event:
-            self._stop_event.set()
-        else:
-            self._stop_event.clear()
-    
+    def stop(self,isToggle=False, isKill=False):
+        if isToggle:
+            if self._stop_event.is_set():
+                paused_duration = time.time() - self._pause_start_time
+                self.stop_time += paused_duration
+                self._stop_event.clear()
+            else:
+                self._pause_start_time = time.time()
+                self._stop_event.set()
+        
+        if isKill:
+            self.isKill = isKill

@@ -89,7 +89,7 @@ class MainWindow(QMainWindow):
 
         self.tableTarget.viewport().installEventFilter(self)
         self.tableTarget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
-        self.tableTarget.customContextMenuRequested.connect(self.ip_control_interface)
+        #self.tableTarget.customContextMenuRequested.connect(self.ip_control_interface)
 
         self.ui.pushButton_pingDurdur.clicked.connect(self.stopAllThreads)
         self.stats_timer = QTimer(self)
@@ -99,11 +99,14 @@ class MainWindow(QMainWindow):
 
     def open_graph(self):
         pass
-    def ip_stop(self, address:str):
+    def ip_stop(self, address:str, **kargs):
+        print("stop_address kargs:", kargs)#FIXME geçici
         global scapyPinger_global
-        scapyPinger_global.stop_address(address=address)
-    def deleteRowFromTable(self):
-        pass
+        scapyPinger_global.stop_address(address=address, **kargs)
+    def deleteRowFromTable(self,address:str):
+        scapyPinger_global.delete_stats(address=address)
+        
+        
      #burada rowdaki veriler alınıp açılan pencereye aktarılmalı böylece rowdaki ip kontrol edilmiş olunur
     def eventFilter(self, source, event):
         if(event.type() == QtCore.QEvent.MouseButtonPress and
@@ -114,22 +117,25 @@ class MainWindow(QMainWindow):
             # Tıklanan y koordinatına göre satır bulunur
             row = self.tableTarget.rowAt(event.pos().y())
             
+            #print(f"x   {event.pos().x()}     y {event.pos().y()}     row {row}")
             if row != -1:
                 # Satır başlığındaki 'target' hücresini al
-                header_item = self.tableTarget.itemAt(1,row)#TODO burası ip adresinin olduğu hücreyi alıyor. Grafik değişire bura da değişmeli. DAha akılcı bir çözüm lazım, belki header listte arama yapılabilinir
+                header_item = self.tableTarget.item(row,0)#TODO burası ip adresinin olduğu hücreyi alıyor. Grafik değişire bura da değişmeli. DAha akılcı bir çözüm lazım, belki header listte arama yapılabilinir
+                
                 if header_item:
                     address = header_item.text()
+                    
                     
                 else:
                     address = None
                     print("Satır başlığı yok")
             
             #Qmenu, ip_control_interface için action menusu
-            self.ip_control_menu = QtWidgets.QMenu()
-            self.ip_control_menu.addAction("Grafik Aç",self.open_graph)
-            self.ip_control_menu.addAction("Durdur",lambda:self.ip_stop(address=address))
-            self.ip_control_menu.addAction("Sil",self.deleteRowFromTable)
-                
+            ip_control_menu = QtWidgets.QMenu()
+            ip_control_menu.addAction("Grafik Aç",self.open_graph)
+            ip_control_menu.addAction("Durdur",lambda:self.ip_stop(address=address, isToggle =True, isKill =False))
+            ip_control_menu.addAction("Sil",lambda: self.deleteRowFromTable(address=address))
+            ip_control_menu.exec(self.tableTarget.mapToGlobal(event.pos()))
 
             
         return super(MainWindow, self).eventFilter(source, event)
@@ -141,7 +147,7 @@ class MainWindow(QMainWindow):
         global stats_list_global
         global headers
 
-        for stat in stats_list_global:
+        for stat in stats_list_global.values():# FIXME burada stat_list liste ise patlar
             summary = stat.summary()
             target = summary["target"]
 
