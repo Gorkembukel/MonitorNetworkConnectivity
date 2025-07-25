@@ -1,13 +1,15 @@
 import sys,time
 from dataclasses import dataclass, field
 from typing import List, Dict
-from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog,QTableWidgetItem
-from PyQt5.QtCore import QTimer,QThread, pyqtSignal
+from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog,QTableWidgetItem,QMenu
+from PyQt5.QtCore import QTimer,QThread, pyqtSignal,Qt
 from PyQt5.QtGui import QColor
 from QTDesigns.MainWindow import Ui_MonitorNetWorkConnectivity
 from QTDesigns.PingWindow import Ui_pingWindow
 from source.PingStats import get_data_keys
 from source.PingThreadController import ScapyPinger
+from PyQt5 import QtCore
+from PyQt5 import QtWidgets
 
 
 scapyPinger_global = ScapyPinger()
@@ -64,7 +66,7 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
         
 
         scapyPinger_global.add_targetList(targets=targets, interval_ms=interval_ms, duration= duration, byte_size= byte_size,isInfinite=isInfinite)
-        scapyPinger_global.target_dict_to_add_task()
+        
         stats_list_global = scapyPinger_global.find_all_stats()
         self.pingTargetsReady.emit()
 
@@ -78,19 +80,63 @@ class MainWindow(QMainWindow):
         self.target_to_row = {}#table için primary key
         self.ui = Ui_MonitorNetWorkConnectivity()
         self.ui.setupUi(self)
-        self.ui.tableTarget
+        self.tableTarget = self.ui.tableTarget
         self.set_table_headers()
         self.buttonPingBaslat = self.ui.pushButton_pingBaslat
         self.ui.pingWindowButton.clicked.connect(self.open_pingWindow)
         self.buttonPingBaslat.clicked.connect(self.set_scapyPinger)
         self.ui.pushButton_pingDurdur.setEnabled(False)
-        
+
+        self.tableTarget.viewport().installEventFilter(self)
+        self.tableTarget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.tableTarget.customContextMenuRequested.connect(self.ip_control_interface)
+
         self.ui.pushButton_pingDurdur.clicked.connect(self.stopAllThreads)
         self.stats_timer = QTimer(self)
-        self.stats_timer.setInterval(16.6)  # 1000ms = 1 saniye
+        self.stats_timer.setInterval(17)  # 1000ms = 1 saniye#60fps için girilen değr
         self.stats_timer.timeout.connect(self.update_Stats)
         self.stats_timer.start()
-        
+
+    def open_graph(self):
+        pass
+    def ip_stop(self, address:str):
+        global scapyPinger_global
+        scapyPinger_global.stop_address(address=address)
+    def deleteRowFromTable(self):
+        pass
+     #burada rowdaki veriler alınıp açılan pencereye aktarılmalı böylece rowdaki ip kontrol edilmiş olunur
+    def eventFilter(self, source, event):
+        if(event.type() == QtCore.QEvent.MouseButtonPress and
+           event.buttons() == QtCore.Qt.RightButton and
+           source is self.tableTarget.viewport()):
+            
+
+            # Tıklanan y koordinatına göre satır bulunur
+            row = self.tableTarget.rowAt(event.pos().y())
+            
+            if row != -1:
+                # Satır başlığındaki 'target' hücresini al
+                header_item = self.tableTarget.itemAt(1,row)#TODO burası ip adresinin olduğu hücreyi alıyor. Grafik değişire bura da değişmeli. DAha akılcı bir çözüm lazım, belki header listte arama yapılabilinir
+                if header_item:
+                    address = header_item.text()
+                    
+                else:
+                    address = None
+                    print("Satır başlığı yok")
+            
+            #Qmenu, ip_control_interface için action menusu
+            self.ip_control_menu = QtWidgets.QMenu()
+            self.ip_control_menu.addAction("Grafik Aç",self.open_graph)
+            self.ip_control_menu.addAction("Durdur",lambda:self.ip_stop(address=address))
+            self.ip_control_menu.addAction("Sil",self.deleteRowFromTable)
+                
+
+            
+        return super(MainWindow, self).eventFilter(source, event)
+
+    def ip_control_interface(self,pos):
+        self.ip_control_menu.exec(self.tableTarget.mapToGlobal(pos))
+
     def update_Stats(self):
         global stats_list_global
         global headers
@@ -117,8 +163,9 @@ class MainWindow(QMainWindow):
                 item.setBackground(color)
                 self.ui.tableTarget.setItem(row, col, item)
 
-        print(f" aktiiiiiiiiiiiiiif threaaaad {scapyPinger_global.get_active_count()}")
-        if scapyPinger_global.get_active_count() == 0:
+        thread_count = scapyPinger_global.get_active_count()
+        self.ui.lineEdit_threadCount.setText(f"{(thread_count)}")
+        if thread_count == 0:
             self.ui.pushButton_pingDurdur.setEnabled(False)
         else:
             self.ui.pushButton_pingDurdur.setEnabled(True)

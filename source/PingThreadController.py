@@ -6,7 +6,7 @@ import ipaddress
 import socket
 from source.PingThread import PingThread
 from source.PingStats import PingStats
-
+from typing import Dict
 
 def is_valid_ip(ip_str: str) -> bool:
     try:
@@ -51,7 +51,7 @@ class PingTask:
 
 class ScapyPinger:
     def __init__(self):
-        self.tasks = {}  # key = target, value = PingTask
+        self.tasks: Dict[str, PingTask] = {}  # key = target, value = PingTask
         self.target_dict = {}#her ip key olup istenen çalışma parametreleri value olacak
         self.stats_list = []
     def add_task(self, target: str,isInfinite: bool, duration: int = 10, interval_ms: int = 1000):
@@ -69,7 +69,7 @@ class ScapyPinger:
         return True
     def target_dict_to_add_task(self):
         targets = self.target_dict
-        for target, config in self.target_dict.items():
+        for target, config in targets.items():
             self.add_task(
                 target=target,
                 duration=config['duration'],
@@ -89,7 +89,7 @@ class ScapyPinger:
                 'isInfinite': isInfinite
 
             }
-
+        self.target_dict_to_add_task()
 
     def start_all(self):
         for task in self.tasks.values():
@@ -131,7 +131,12 @@ class ScapyPinger:
     
         for stat in self.stats_list:
             stat.all_graph(True)
-    
+    def stop_address(self, address: str = ""):
+        if address in self.tasks:
+            self.tasks[address].stop()
+        else:
+            print(f"PingThreadController Stop_address metodu__Adres bulunamadı: {address}")
+
     def stop_All(self):
         for task in self.tasks.values():  #  sadece value'larla ilgileniyoruz
             task.stop()

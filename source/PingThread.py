@@ -1,6 +1,7 @@
 # ping_thread.py
 import threading
 import time
+
 from scapy.all import IP, ICMP, sr1
 from source.PingStats import PingStats
 from icmplib import ping as icmp_ping
@@ -20,26 +21,9 @@ class PingThread(threading.Thread):
         
     def _should_continue(self):
         return self.isInfinite or time.time() < self.stop_time
-    def runscpay(self):
-        while self._should_continue() and self._stop_event: 
-            packet = IP(dst=self.target)/ICMP()
-            send_time = time.time()
-            try:
-                reply = sr1(packet, timeout=1, verbose=0)
-                recv_time = time.time()
-                if reply:
-                    rtt = (recv_time - send_time) * 1000
-                    self.stats.add_result(rtt)
-                    print(f"[{self.target}] ✅ {rtt:.2f} ms")
-                else:
-                    self.stats.add_result(None)
-                    print(f"[{self.target}] ❌ Timeout")
-            except Exception as e:
-                self.stats.add_result(None)
-                print(f"[{self.target}] ⚠️ Error: {e}")
     def run(self):
 
-        while self._should_continue() and not self._stop_event.is_set():
+        while self._should_continue() and not self._stop_event.is_set():#TODO burada sürekli metot çağırılıyor performans için değiştirilebilir
             # icmplib yöntemi
             send_time = time.time()
             print(f"intervaaaaaaaaaaaaaaaaaal {self.interval}")
@@ -54,7 +38,9 @@ class PingThread(threading.Thread):
             else:
                 self.stats.add_result(None)
                 print(f"[{self.target}] ❌ Timeout (icmplib)")
-            
+            time.sleep(self.interval)   
+
+            #TODO durduktan sonra zaman kaybı
 
     def getStats(self):
         return self.stats
@@ -65,5 +51,8 @@ class PingThread(threading.Thread):
     def getWhileCondition(self):
         return self.whileCondition
     def stop(self):
-        self._stop_event.set()
+        if not self._stop_event:
+            self._stop_event.set()
+        else:
+            self._stop_event.clear()
     
