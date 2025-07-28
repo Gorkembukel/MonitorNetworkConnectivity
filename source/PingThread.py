@@ -53,6 +53,7 @@ class PingThread(threading.Thread):
         while not self.isKill:#TODO bu while hep dönecek, kill komutu gelene kadar threadi uykuda tutacak
             while self._should_continue() and not self._stop_event.is_set():#TODO burada sürekli metot çağırılıyor performans için değiştirilebilir
                 # icmplib yöntemi
+                
                 send_time = time.time()
                 print(f"[{self.address}] ➡️ icmp_ping kwargs: {self.kwargs}")
                 result = icmp_ping(address=self.address, count=self.count,interval=self.interval_ms, timeout=self.timeout, id=self.id, source=self.source,
@@ -100,3 +101,18 @@ class PingThread(threading.Thread):
             self.isKill = isKill
     def getEnd_datetime(self):
         return self.end_datetime
+    def update_parameters(self, interval_ms=None, end_datetime=None, timeout=None, count=None, isInfinite=None, **kwargs):
+        if interval_ms is not None:
+            self.interval_ms = interval_ms / 1000
+        if end_datetime is not None:
+            self.end_datetime = end_datetime
+        if timeout is not None:
+            self.timeout = timeout
+        if count is not None:
+            self.count = count
+        if isInfinite is not None:
+            self.isInfinite = isInfinite
+        if kwargs:
+            self.kwargs.update(kwargs)
+
+        print(f"[{self.address}] 🔁 Thread parametreleri güncellendi.")

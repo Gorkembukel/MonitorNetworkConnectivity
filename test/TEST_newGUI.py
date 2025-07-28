@@ -13,7 +13,7 @@ from source.PingThreadController import PingTask
 from source.PingThreadController import ScapyPinger
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
-
+from source.GUI_graph import GraphWindow
 
 scapyPinger_global = ScapyPinger()
 stats_list_global = scapyPinger_global.find_all_stats()
@@ -62,7 +62,34 @@ class ChangeParameterWindow(QDialog):
             self.ui.dateTimeEdit.setDateTime(self.task.kwargs['end_datetime'])#pingthread oluşmadığı için ve bu bilgi PingTask'da saklanmadığı için kwargdan alıyoruz
             self.ui.tabWidget.setCurrentIndex(1)
     def applyChange(self):
-        pass
+        try:
+            # Interval
+            interval_text = self.ui.lineEdit_interval.text().strip()
+            if interval_text:
+                self.task.interval_ms = int(interval_text)
+
+            # Payload Size
+            payload_text = self.ui.lineEdit_payloadsize.text().strip()
+            if payload_text:
+                self.task.kwargs["payload_size"] = int(payload_text)
+
+            # Duration tabı aktifse → duration güncellenir
+            if self.ui.tabWidget.isTabEnabled(0) and self.ui.lineEdit_duration.isEnabled():
+                duration_text = self.ui.lineEdit_duration.text().strip()
+                if duration_text:
+                    self.task.duration = int(duration_text)
+
+            # End datetime tabı aktifse → end_datetime güncellenir
+            if self.ui.tabWidget.isTabEnabled(1) and self.ui.dateTimeEdit.isEnabled():
+                dt = self.ui.dateTimeEdit.dateTime().toPyDateTime()
+                self.task.kwargs["end_datetime"] = dt
+            self.task.update_thread_parameters()
+            self.close()  # pencereyi kapat
+        except ValueError as e:
+            print(f"❗ Hatalı giriş: {e}")
+            QtWidgets.QMessageBox.warning(self, "Geçersiz Girdi", "Lütfen tüm değerleri sayısal ve doğru formatta girin.")
+
+
 class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
     pingTargetsReady = pyqtSignal()#
     def __init__(self, parent= None):
@@ -164,8 +191,11 @@ class MainWindow(QMainWindow):
         self.stats_timer.timeout.connect(self.update_Stats)
         self.stats_timer.start()
 
-    def open_graph(self):
-        pass
+    def open_graph(self,address):
+        task = scapyPinger_global.get_task(address=address)
+        statObject = task.stats
+        self.graphWindow = GraphWindow(stat_obj=statObject,parent=self)
+        self.graphWindow.show()
     def ip_stop(self, address:str, **kargs):
         print("stop_address kargs:", kargs)#FIXME geçici
         global scapyPinger_global
@@ -199,7 +229,7 @@ class MainWindow(QMainWindow):
             
             #Qmenu, ip_control_interface için action menusu
             ip_control_menu = QtWidgets.QMenu()
-            ip_control_menu.addAction("Grafik Aç",self.open_graph)
+            ip_control_menu.addAction("Grafik Aç",lambda:self.open_graph(address=address))
             ip_control_menu.addAction("Durdur",lambda:self.ip_stop(address=address, isToggle =True, isKill =False))
             ip_control_menu.addAction("Sil",lambda: self.deleteRowFromTable(address=address))
             ip_control_menu.exec(self.tableTarget.mapToGlobal(event.pos()))

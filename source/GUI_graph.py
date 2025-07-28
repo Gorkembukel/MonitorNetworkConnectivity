@@ -1,0 +1,65 @@
+from PyQt5.QtWidgets import QDialog, QVBoxLayout
+from pyqtgraph import PlotWidget
+from QTDesigns.graph_window import Ui_Dialog_graphWindow
+
+class GraphWindow(QDialog):
+    def __init__(self, stat_obj, parent=None):
+        super().__init__(parent)
+        self.ui = Ui_Dialog_graphWindow()
+        self.ui.setupUi(self)
+        self.stat_obj = stat_obj
+
+        self.plot_refs = {}  # güncelleme için sakla
+
+        self.setup_tabs()
+
+        # Timer ile canlı güncelleme
+        from PyQt5.QtCore import QTimer
+        self.timer = QTimer()
+        self.timer.setInterval(17)#60fps için
+        self.timer.timeout.connect(self.update_plots)
+        self.timer.start()
+
+    def setup_tabs(self):
+        # 1️⃣ RTT → tab
+        rtt_plot = PlotWidget()
+        curve = self.stat_obj.get_rtt_curve()
+        rtt_plot.addItem(curve)
+        layout1 = QVBoxLayout()
+        layout1.addWidget(rtt_plot)
+        self.ui.tab.setLayout(layout1)
+        self.plot_refs['rtt'] = curve
+
+        # 2️⃣ Jitter → tab_2
+        jitter_plot = PlotWidget()
+        bar = self.stat_obj.get_jitter_bar()
+        jitter_plot.addItem(bar)
+        layout2 = QVBoxLayout()
+        layout2.addWidget(jitter_plot)
+        self.ui.tab_2.setLayout(layout2)
+        self.plot_refs['jitter'] = bar
+
+        # 3️⃣ Success bar → tab_3
+        succ_plot = PlotWidget()
+        bar2 = self.stat_obj.get_success_bar()
+        succ_plot.addItem(bar2)
+        layout3 = QVBoxLayout()
+        layout3.addWidget(succ_plot)
+        self.ui.tab_3.setLayout(layout3)
+        self.plot_refs['success'] = bar2
+
+        # 4️⃣ Min/Max → tab_4
+        minmax_plot = PlotWidget()
+        for line in self.stat_obj.get_min_max_lines():
+            minmax_plot.addItem(line)
+        layout4 = QVBoxLayout()
+        layout4.addWidget(minmax_plot)
+        self.ui.tab_4.setLayout(layout4)
+
+    def update_plots(self):
+        if 'rtt' in self.plot_refs:
+            self.plot_refs['rtt'].setData([r if r is not None else -1 for r in self.stat_obj._rttList])
+        if 'jitter' in self.plot_refs:
+            self.plot_refs['jitter'].setOpts(height=[self.stat_obj.jitter])
+        if 'success' in self.plot_refs:
+            self.plot_refs['success'].setOpts(height=[self.stat_obj.received, self.stat_obj.failed])

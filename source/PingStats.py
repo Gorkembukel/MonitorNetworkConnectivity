@@ -1,6 +1,7 @@
 from typing import List, Optional
 from statistics import mean, stdev
 import matplotlib.pyplot as plt
+import pyqtgraph as pg
 import time
 dict_of_data_keys = {# buradaki keyler tablodaki sütun başlıkları için kullanılacak. Ekleyeceğiniz veri varsa burada başlığını girerseniz grafik güncellenir
             "target": "",
@@ -172,6 +173,34 @@ class PingStats:
     def show_all():
         """Elde bekleyen tüm grafikleri aynı anda gösterir"""
         plt.show()
+    
+    def pygraph(self):
+        valid_rtt_list = [r for r in self._rttList if r is not None]# listeyi temizler none verilerden ayıklar
+        if not valid_rtt_list:
+            print(f"[{self._target}] Geçerli RTT verisi yok.")
+            return
+        pg.plot(valid_rtt_list, pen='g', symbol='o', title=f"RTT for {self._target}")
+
+    def get_rtt_curve(self):
+        from pyqtgraph import PlotDataItem
+        y_data = [r if r is not None else -1 for r in self._rttList]
+        return PlotDataItem(y_data, pen='g', symbol='o', name="RTT Trend")
+    def get_jitter_bar(self):
+        from pyqtgraph import BarGraphItem
+        return BarGraphItem(x=[0], height=[self.jitter], width=0.6, brush='b')
+    def get_success_bar(self):
+        from pyqtgraph import BarGraphItem
+        success = self.received
+        fail = self.failed
+        return BarGraphItem(x=[0, 1], height=[success, fail], width=0.6, brushes=['g', 'r'])
+    def get_min_max_lines(self):
+        from pyqtgraph import InfiniteLine
+        lines = []
+        if self.min_rtt is not None:
+            lines.append(InfiniteLine(pos=self.min_rtt, angle=0, pen='y'))
+        if self.max_rtt is not None:
+            lines.append(InfiniteLine(pos=self.max_rtt, angle=0, pen='m'))
+        return lines
 
 
 

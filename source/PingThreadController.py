@@ -81,6 +81,14 @@ class PingTask:
             return self.thread.getEnd_datetime()
         else :
             None
+    def update_thread_parameters(self):
+        if self.thread:
+            self.thread.update_parameters(
+                interval_ms=self.interval_ms,
+                end_datetime=self.kwargs.get("end_datetime", None),
+                isInfinite=self.isInfinite,
+                **self.kwargs
+            )
 
 
 class ScapyPinger:
