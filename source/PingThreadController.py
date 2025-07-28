@@ -180,5 +180,5 @@ class ScapyPinger:
 
     def stop_All(self):
         for task in self.tasks.values():  #  sadece value'larla ilgileniyoruz
-            task.stop()
+            task.stop(isKill=True)
 

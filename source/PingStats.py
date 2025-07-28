@@ -14,7 +14,7 @@ dict_of_data_keys = {# buradaki keyler tablodaki sütun başlıkları için kull
             "max_rtt": "",
             "jitter": "",
             "last_result": "",
-            "time_per_ping":""
+            "rate":""
         }
 
 def get_data_keys():
@@ -25,13 +25,14 @@ class PingStats:
     def __init__(self, target: str):
         self._target = target
         self._rttList: List[Optional[float]] = []
-        self.initTime = time.time()#TODO gereksiz olabilir
+        self._rate: float = 0
         self.addTime: float
     
     def add_result(self, rtt: Optional[float]):
         self._rttList.append(rtt)
         self.addTime = time.time()
-
+    def update_rate(self, pulse:int):
+        self.rate = 1/pulse
     @property
     def target(self): return self._target
     @property
@@ -63,16 +64,12 @@ class PingStats:
         if not self._rttList: return "No Data"
         return "Success" if self._rttList[-1] is not None else "Timeout"
     @property
-    def time_per_ping(self):
-        int = 20
-        sumRtt = 0.0
-        for rtt in self._rttList[-int:]:
-            if rtt:
-                sumRtt += rtt
-        result = round(sumRtt/int,2)
-        
-    
-        return (result)
+    def rate(self):
+        return self._rate
+
+    @rate.setter
+    def rate(self, value: float):
+        self._rate = value
         
         
     def setAddress(self,target):
@@ -86,11 +83,11 @@ class PingStats:
             "failed": self.failed,
             "success_rate": round(self.success_rate, 2),
             "avg_rtt": self.average_rtt,
-            "min_rtt": self.min_rtt,
-            "max_rtt": self.max_rtt,
-            "jitter": self.jitter,
+            "min_rtt": round(self.min_rtt, 2) if self.min_rtt is not None else None,
+            "max_rtt": round(self.max_rtt, 2) if self.max_rtt is not None else None,
+            "jitter": round(self.jitter, 2) if self.jitter is not None else None,
             "last_result": self.last_result,
-            "time_per_ping": self.time_per_ping
+            "rate": round(self.rate, 2) if self.rate is not None else None
         }
     
     

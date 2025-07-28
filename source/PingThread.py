@@ -60,15 +60,22 @@ class PingThread(threading.Thread):
         family=self.family, privileged=self.privileged, **self.kwargs)
                 if result.is_alive:
                     #rtt = result.avg_rtt
-                    recv_time = time.time()
-                    rtt = result._rtts.pop()
                     
+                    rtt = result._rtts.pop()
+                    recv_time = time.time()
                     self.stats.add_result(rtt)
+                    
                     print(f"[{self.address}] ✅ {rtt:.2f} ms (icmplib)")
                 else:
                     self.stats.add_result(None)
                     print(f"[{self.address}] ❌ Timeout (icmplib)")
-                time.sleep(self.interval_ms)              
+                reply_time = recv_time -send_time
+                sleep_time = self.interval_ms - reply_time# threadin tam olarak interval kadar uyuması için ping atma süresi kadar çıkartıyorum çünkü zaten o kadar zaman geçiyo             
+                if sleep_time > 0:
+                    time.sleep(sleep_time) 
+                endOf_while = time.time()
+                pulse = endOf_while - send_time
+                self.stats.update_rate(pulse)
             if not self._should_continue() :# thread işlemini bitirip durdu ise threadi kapatır, kullanıcı tarafından durduruldu ise uykuya dalar
                 self.isKill = True
                 break

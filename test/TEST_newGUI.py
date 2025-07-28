@@ -201,6 +201,7 @@ class MainWindow(QMainWindow):
         global scapyPinger_global
         scapyPinger_global.stop_address(address=address, **kargs)
     def deleteRowFromTable(self,address:str):
+        scapyPinger_global.stop_address(address=address,isKill=True)
         scapyPinger_global.delete_stats(address=address)
         
         
@@ -213,19 +214,20 @@ class MainWindow(QMainWindow):
 
             # Tıklanan y koordinatına göre satır bulunur
             row = self.tableTarget.rowAt(event.pos().y())
+            col = self.tableTarget.columnAt(event.pos().x())
             
-            #print(f"x   {event.pos().x()}     y {event.pos().y()}     row {row}")
-            if row != -1:
-                # Satır başlığındaki 'target' hücresini al
-                header_item = self.tableTarget.item(row,0)#TODO burası ip adresinin olduğu hücreyi alıyor. Grafik değişire bura da değişmeli. DAha akılcı bir çözüm lazım, belki header listte arama yapılabilinir
+            if row == -1 or col == -1:
+                return super(MainWindow, self).eventFilter(source, event)
+            # Satır başlığındaki 'target' hücresini al
+            header_item = self.tableTarget.item(row,0)#TODO burası ip adresinin olduğu hücreyi alıyor. Grafik değişire bura da değişmeli. DAha akılcı bir çözüm lazım, belki header listte arama yapılabilinir
+            
+            if header_item:
+                address = header_item.text()
                 
-                if header_item:
-                    address = header_item.text()
-                    
-                    
-                else:
-                    address = None
-                    print("Satır başlığı yok")
+                
+            else:
+                address = None
+                print("Satır başlığı yok")
             
             #Qmenu, ip_control_interface için action menusu
             ip_control_menu = QtWidgets.QMenu()
@@ -260,11 +262,52 @@ class MainWindow(QMainWindow):
 
     def ip_control_interface(self,pos):
         self.ip_control_menu.exec(self.tableTarget.mapToGlobal(pos))
+    def update_rate_cell(self, row: int, col: int, stat):
+        
+
+        target = stat.target
+
+        if not hasattr(self, 'target_to_graph'):
+            self.target_to_graph = {}
+
+        if target in self.target_to_graph:
+            graph = self.target_to_graph[target]
+
+            # C++ nesnesi silinmiş mi?
+            if graph["curve"] is None or not hasattr(graph["curve"], "setData"):
+                return
+
+            now = time.time()
+            rate_val = stat.rate or 0.1
+            beat = min(1.0, rate_val / 10.0)
+
+            graph["x"].pop(0)
+            graph["x"].append(now)
+
+            graph["y"].pop(0)
+            graph["y"].append(beat)
+
+            try:
+                graph["curve"].setData(graph["x"], graph["y"])
+            except RuntimeError:
+                print(f"[{target}] Curve silinmiş, güncellenemiyor.")
+                return
+        else:
+            container, curve, x, y = GraphWindow.create_rate_widget()
+            self.ui.tableTarget.setCellWidget(row, col, container)
+            self.target_to_graph[target] = {
+                "curve": curve,
+                "x": x,
+                "y": y
+            }
 
     def update_Stats(self):
         global stats_list_global
         global headers
         self.tableTarget.clearContents()#silinmiş pingStat objelerinin verilerini tablodan kaldırır
+        self.tableTarget.clearContents()
+        if hasattr(self, 'target_to_graph'):
+            self.target_to_graph.clear()
         for stat in stats_list_global.values():# FIXME burada stat_list liste ise patlar
             summary = stat.summary()
             target = summary["target"]
@@ -282,10 +325,13 @@ class MainWindow(QMainWindow):
 
             # 🔁 Hem hücreyi doldur, hem rengini ver
             for col, key in enumerate(headers):
-                value = summary.get(key, "")
-                item = QTableWidgetItem(str(value))
-                item.setBackground(color)
-                self.ui.tableTarget.setItem(row, col, item)
+                 if key == "rate":
+                    self.update_rate_cell(row, col, stat)
+                 else:
+                    value = summary.get(key, "")
+                    item = QTableWidgetItem(str(value))
+                    item.setBackground(color)
+                    self.ui.tableTarget.setItem(row, col, item)
 
         thread_count = scapyPinger_global.get_active_count()
         self.ui.lineEdit_threadCount.setText(f"{(thread_count)}")
@@ -356,6 +402,15 @@ class MainWindow(QMainWindow):
     
     def add_pings(self):
         pass
+    def closeEvent(self, event):
+        print("Uygulama kapanıyor, thread'ler durduruluyor...")
+        
+        # Thread nesnelerini döngüyle durdur
+        for task in scapyPinger_global.tasks.values():
+            task.stop(isKill = True)
+            task.join()  # thread kapanmasını bekle
+
+        event.accept()  # pencerenin kapanmasına izin ver
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
