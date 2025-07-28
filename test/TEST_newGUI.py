@@ -33,6 +33,12 @@ class ChangeParameterWindow(QDialog):
         self.ui.setupUi(self)
         self.task = task
 
+        now = datetime.now()
+        #calender için ayar
+        self.ui.dateTimeEdit.setCalendarPopup(True)
+        self.ui.dateTimeEdit.setDateTime(QDateTime.currentDateTime())
+        self.ui.dateTimeEdit.setMinimumDate(now)
+        #task değerlerini okuyup gösterir
         self.ui.lineEdit_ip.setText(task.address)
         self.ui.lineEdit_interval.setText(str(task.interval_ms))
         self.ui.lineEdit_payloadsize.setText(str(task.kwargs['payload_size']))
@@ -43,15 +49,18 @@ class ChangeParameterWindow(QDialog):
         tabCount = self.ui.tabWidget.count()
         print(f"tab count {tabCount}")
 
-        
+        print(f"end date var mı {self.task.getEnd_datetime()}")
 
         for i in range(tabCount):        
             self.ui.tabWidget.setTabEnabled(i, False)# bütün tabları kapatır
-        if self.task.duration:
+        if self.task.duration and self.task.duration !=0:
             self.ui.tabWidget.setTabEnabled(0, True)# duration değeri varsa o tabi açar
-        if self.task.getEnd_datetime():
+            self.ui.lineEdit_duration.setText(str(self.task.duration))
+            self.ui.tabWidget.setCurrentIndex(0)
+        if self.task.kwargs.get('end_datetime'):
             self.ui.tabWidget.setTabEnabled(1, True)# end date objesi varsa değeri varsa o tabi açar
-
+            self.ui.dateTimeEdit.setDateTime(self.task.kwargs['end_datetime'])#pingthread oluşmadığı için ve bu bilgi PingTask'da saklanmadığı için kwargdan alıyoruz
+            self.ui.tabWidget.setCurrentIndex(1)
     def applyChange(self):
         pass
 class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
@@ -71,7 +80,7 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
         now = datetime.now()
         
         self.ui.dateTimeEdit.setDateTime(QDateTime.currentDateTime())
-        self.ui.dateTimeEdit.setMaximumDate(now)
+        self.ui.dateTimeEdit.setMinimumDate(now)
 
         self.ui.checkBox.toggled.connect(self.changeDurationLabel)
     def setIsInfinite(self):    
@@ -105,7 +114,8 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
 
         interval_ms = self.ui.spinBox_interval.value()
         isInfinite = self.isInfinite
-        duration = self.ui.spinBox_duration.value()
+        duration = self.ui.spinBox_duration.value() if self.ui.spinBox_duration.isEnabled() else None# kutu aktif değilse değerini okumaz
+
         qt_datetime = None
         if self.ui.dateTimeEdit.isEnabled():
             qt_datetime = self.ui.dateTimeEdit.dateTime()
@@ -116,7 +126,13 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
         
 
         scapyPinger_global.add_addressList(addresses=addresses, interval_ms=interval_ms, duration= duration,isInfinite=isInfinite, payload_size = payload_size,**kwargs)
-        
+        text = ""
+        interval_ms = None
+        isInfinite = None
+        duration = None
+        qt_datetime = None
+        kwargs = None
+
         stats_list_global = scapyPinger_global.find_all_stats()
         self.pingTargetsReady.emit()
 
