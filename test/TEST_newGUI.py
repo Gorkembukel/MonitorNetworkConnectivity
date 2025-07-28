@@ -1,12 +1,15 @@
 import sys,time
+from datetime import datetime
 from dataclasses import dataclass, field
 from typing import List, Dict
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog,QTableWidgetItem,QMenu
-from PyQt5.QtCore import QTimer,QThread, pyqtSignal,Qt
+from PyQt5.QtCore import QTimer,QThread, pyqtSignal,Qt,QTime,QDateTime
 from PyQt5.QtGui import QColor
 from QTDesigns.MainWindow import Ui_MonitorNetWorkConnectivity
 from QTDesigns.PingWindow import Ui_pingWindow
+from QTDesigns.Change_parameters import Ui_Dialog_changeParameter
 from source.PingStats import get_data_keys
+from source.PingThreadController import PingTask
 from source.PingThreadController import ScapyPinger
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
@@ -23,7 +26,34 @@ class Pass_Data_ScapyPinger:#veri aktarmak için container
     byte_size: int = 64
     target_dict: Dict[str, Dict[str, int]] = field(default_factory=dict)
 
+class ChangeParameterWindow(QDialog):
+    def __init__(self, parent= None, task:PingTask = None):
+        super().__init__(parent)
+        self.ui = Ui_Dialog_changeParameter()
+        self.ui.setupUi(self)
+        self.task = task
 
+        self.ui.lineEdit_ip.setText(task.address)
+        self.ui.lineEdit_interval.setText(str(task.interval_ms))
+        self.ui.lineEdit_payloadsize.setText(str(task.kwargs['payload_size']))
+        self.dissableTabsExcept()
+
+        self.ui.pushButton_settChages.clicked.connect(self.applyChange)
+    def dissableTabsExcept(self):
+        tabCount = self.ui.tabWidget.count()
+        print(f"tab count {tabCount}")
+
+        
+
+        for i in range(tabCount):        
+            self.ui.tabWidget.setTabEnabled(i, False)# bütün tabları kapatır
+        if self.task.duration:
+            self.ui.tabWidget.setTabEnabled(0, True)# duration değeri varsa o tabi açar
+        if self.task.getEnd_datetime():
+            self.ui.tabWidget.setTabEnabled(1, True)# end date objesi varsa değeri varsa o tabi açar
+
+    def applyChange(self):
+        pass
 class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
     pingTargetsReady = pyqtSignal()#
     def __init__(self, parent= None):
@@ -33,39 +63,59 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
         self.ui.setupUi(self)
         self.data = Pass_Data_ScapyPinger()
         self.isInfinite = False
+        
          # Butona tıklanınca işlem yapılacak
-        self.ui.pushButton.clicked.connect(self.extract_targets)
+        self.ui.pushButton.clicked.connect(self.extract_addresses)
         self.ui.pushButton_durationUnlimited.clicked.connect(self.setIsInfinite)
+
+        now = datetime.now()
+        
+        self.ui.dateTimeEdit.setDateTime(QDateTime.currentDateTime())
+        self.ui.dateTimeEdit.setMaximumDate(now)
+
+        self.ui.checkBox.toggled.connect(self.changeDurationLabel)
     def setIsInfinite(self):    
         if self.isInfinite:
             self.isInfinite =False
         else:
             self.isInfinite = True
 
+    def changeDurationLabel(self,toggled):
+        self.ui.label_duration.setDisabled(toggled)
 
-
-    def extract_targets(self):
+    def extract_addresses(self):
         global headers 
         global scapyPinger_global
         global stats_list_global
         headers = list(get_data_keys())
+        kwargs = {}#scapypinger için argümanlar.Eklemek istediğiniz armünanları pingthreadController içindeki filtre metoduna tanıtmalısınız 
+                   #PingThreadController ->PingThread ->icmplib ping ->ICMPRequest
+
         # 1️⃣ PlainTextEdit içeriğini al
         text = self.ui.plainTextEdit.toPlainText()
         # 2️⃣ Satırları ayır ve boş olmayanları döndür
-        targets = [line.strip() for line in text.splitlines() if line.strip()]
+        addresses = [line.strip() for line in text.splitlines() if line.strip()]
 
-        self.data.targets = targets#TODO deepcopy gerekebilir mi?
+        self.data.targets = addresses#TODO deepcopy gerekebilir mi?
 
          # 2️⃣ SpinBox'lardan parametreleri al
-        byte_size = self.ui.spinBox_byte.value()
+        payload_size = self.ui.spinBox_byte.value()
+        payload_size = 56 if not payload_size else payload_size#FIXME payload_size sıfır olmasın diye default değer girildi ama defalut değeri hem burada hem kendi yerinde (icmplib pig) olması 
+                                                               # doğru gelmedi. bu argümanlar boş olduğunda add_addresslist'e geçmeyecek şekilde düzenlemek daha doğru olur
+
         interval_ms = self.ui.spinBox_interval.value()
-        duration = self.ui.spinBox_duration.value()
         isInfinite = self.isInfinite
+        duration = self.ui.spinBox_duration.value()
+        qt_datetime = None
+        if self.ui.dateTimeEdit.isEnabled():
+            qt_datetime = self.ui.dateTimeEdit.dateTime()
 
+        if qt_datetime:
+            kwargs["end_datetime"] = qt_datetime.toPyDateTime()#pingThread'de date objesi olarak kullanılır
         
         
 
-        scapyPinger_global.add_targetList(targets=targets, interval_ms=interval_ms, duration= duration, byte_size= byte_size,isInfinite=isInfinite)
+        scapyPinger_global.add_addressList(addresses=addresses, interval_ms=interval_ms, duration= duration,isInfinite=isInfinite, payload_size = payload_size,**kwargs)
         
         stats_list_global = scapyPinger_global.find_all_stats()
         self.pingTargetsReady.emit()
@@ -89,6 +139,7 @@ class MainWindow(QMainWindow):
 
         self.tableTarget.viewport().installEventFilter(self)
         self.tableTarget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.ui.tableTarget.cellDoubleClicked.connect(self.on_row_clicked)
         #self.tableTarget.customContextMenuRequested.connect(self.ip_control_interface)
 
         self.ui.pushButton_pingDurdur.clicked.connect(self.stopAllThreads)
@@ -136,6 +187,27 @@ class MainWindow(QMainWindow):
             ip_control_menu.addAction("Durdur",lambda:self.ip_stop(address=address, isToggle =True, isKill =False))
             ip_control_menu.addAction("Sil",lambda: self.deleteRowFromTable(address=address))
             ip_control_menu.exec(self.tableTarget.mapToGlobal(event.pos()))
+        if(event.type() == QtCore.QEvent.MouseButtonPress and
+           event.buttons() == QtCore.Qt.LeftButton and
+           source is self.tableTarget.viewport()):
+            
+
+            # Tıklanan y koordinatına göre satır bulunur
+            row = self.tableTarget.rowAt(event.pos().y())
+            
+            #print(f"x   {event.pos().x()}     y {event.pos().y()}     row {row}")
+            if row != -1:
+                # Satır başlığındaki 'target' hücresini al
+                header_item = self.tableTarget.item(row,0)#TODO burası ip adresinin olduğu hücreyi alıyor. Grafik değişire bura da değişmeli. DAha akılcı bir çözüm lazım, belki header listte arama yapılabilinir
+                
+                if header_item:
+                    address = header_item.text()
+                    self.open_changeSettingsWindow(task=scapyPinger_global.get_task(address=address))
+                    
+                else:
+                    address = None
+                    print("Satır başlığı yok")
+
 
             
         return super(MainWindow, self).eventFilter(source, event)
@@ -146,7 +218,7 @@ class MainWindow(QMainWindow):
     def update_Stats(self):
         global stats_list_global
         global headers
-
+        self.tableTarget.clearContents()#silinmiş pingStat objelerinin verilerini tablodan kaldırır
         for stat in stats_list_global.values():# FIXME burada stat_list liste ise patlar
             summary = stat.summary()
             target = summary["target"]
@@ -175,6 +247,7 @@ class MainWindow(QMainWindow):
             self.ui.pushButton_pingDurdur.setEnabled(False)
         else:
             self.ui.pushButton_pingDurdur.setEnabled(True)
+        
 
     def stopAllThreads(self):
         scapyPinger_global.stop_All()
@@ -215,8 +288,25 @@ class MainWindow(QMainWindow):
         self.pingWindow = PingWindow(self)
         self.pingWindow.pingTargetsReady.connect(self.update_Stats)
         self.pingWindow.show()
-        
+    def on_row_clicked(self, row, column):
+        print("mahmut")
+        table = self.ui.tableTarget
+        column_count = table.columnCount()
 
+        values = []
+        for col in range(column_count):
+            item = table.item(row, col)
+            if item:
+                values.append(item.text())
+            else:
+                values.append("")
+
+        print(f"Seçilen satır verileri: {values}")
+
+    def open_changeSettingsWindow(self, task:PingTask):
+        if task:
+            self.changeSetting = ChangeParameterWindow(task=task)
+            self.changeSetting.show()
     
     def add_pings(self):
         pass

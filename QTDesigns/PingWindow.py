@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'PingWindow.ui'
+# Form implementation generated from reading ui file 'QTDesigns/PingWindow.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
 #
@@ -25,39 +25,51 @@ class Ui_pingWindow(object):
         self.pushButton.setGeometry(QtCore.QRect(380, 330, 89, 25))
         self.pushButton.setObjectName("pushButton")
         self.formLayoutWidget = QtWidgets.QWidget(pingWindow)
-        self.formLayoutWidget.setGeometry(QtCore.QRect(340, 30, 221, 288))
+        self.formLayoutWidget.setGeometry(QtCore.QRect(340, 30, 247, 316))
         self.formLayoutWidget.setObjectName("formLayoutWidget")
         self.formLayout = QtWidgets.QFormLayout(self.formLayoutWidget)
         self.formLayout.setContentsMargins(0, 0, 0, 0)
         self.formLayout.setObjectName("formLayout")
-        self.spinBox_byte = QtWidgets.QSpinBox(self.formLayoutWidget)
-        self.spinBox_byte.setMaximum(9999)
-        self.spinBox_byte.setObjectName("spinBox_byte")
-        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.spinBox_byte)
         self.label_2 = QtWidgets.QLabel(self.formLayoutWidget)
         self.label_2.setObjectName("label_2")
         self.formLayout.setWidget(2, QtWidgets.QFormLayout.LabelRole, self.label_2)
+        self.spinBox_byte = QtWidgets.QSpinBox(self.formLayoutWidget)
+        self.spinBox_byte.setMaximum(99999)
+        self.spinBox_byte.setObjectName("spinBox_byte")
+        self.formLayout.setWidget(3, QtWidgets.QFormLayout.LabelRole, self.spinBox_byte)
+        self.label_3 = QtWidgets.QLabel(self.formLayoutWidget)
+        self.label_3.setObjectName("label_3")
+        self.formLayout.setWidget(9, QtWidgets.QFormLayout.LabelRole, self.label_3)
         self.spinBox_interval = QtWidgets.QSpinBox(self.formLayoutWidget)
         self.spinBox_interval.setMaximum(99999)
         self.spinBox_interval.setObjectName("spinBox_interval")
         self.formLayout.setWidget(10, QtWidgets.QFormLayout.LabelRole, self.spinBox_interval)
-        self.label_3 = QtWidgets.QLabel(self.formLayoutWidget)
-        self.label_3.setObjectName("label_3")
-        self.formLayout.setWidget(9, QtWidgets.QFormLayout.LabelRole, self.label_3)
+        self.label_duration = QtWidgets.QLabel(self.formLayoutWidget)
+        self.label_duration.setObjectName("label_duration")
+        self.formLayout.setWidget(15, QtWidgets.QFormLayout.LabelRole, self.label_duration)
         self.spinBox_duration = QtWidgets.QSpinBox(self.formLayoutWidget)
         self.spinBox_duration.setEnabled(True)
+        self.spinBox_duration.setMaximum(99999)
         self.spinBox_duration.setObjectName("spinBox_duration")
         self.formLayout.setWidget(16, QtWidgets.QFormLayout.LabelRole, self.spinBox_duration)
-        self.label_4 = QtWidgets.QLabel(self.formLayoutWidget)
-        self.label_4.setObjectName("label_4")
-        self.formLayout.setWidget(15, QtWidgets.QFormLayout.LabelRole, self.label_4)
         self.pushButton_durationUnlimited = QtWidgets.QPushButton(self.formLayoutWidget)
         self.pushButton_durationUnlimited.setCheckable(True)
         self.pushButton_durationUnlimited.setObjectName("pushButton_durationUnlimited")
         self.formLayout.setWidget(16, QtWidgets.QFormLayout.FieldRole, self.pushButton_durationUnlimited)
+        self.dateTimeEdit = QtWidgets.QDateTimeEdit(self.formLayoutWidget)
+        self.dateTimeEdit.setEnabled(False)
+        self.dateTimeEdit.setCalendarPopup(True)
+        self.dateTimeEdit.setObjectName("dateTimeEdit")
+        self.formLayout.setWidget(17, QtWidgets.QFormLayout.LabelRole, self.dateTimeEdit)
+        self.checkBox = QtWidgets.QCheckBox(self.formLayoutWidget)
+        self.checkBox.setObjectName("checkBox")
+        self.formLayout.setWidget(17, QtWidgets.QFormLayout.FieldRole, self.checkBox)
 
         self.retranslateUi(pingWindow)
         self.pushButton_durationUnlimited.clicked['bool'].connect(self.spinBox_duration.setDisabled) # type: ignore
+        self.checkBox.toggled['bool'].connect(self.spinBox_duration.setDisabled) # type: ignore
+        self.checkBox.toggled['bool'].connect(self.pushButton_durationUnlimited.setDisabled) # type: ignore
+        self.checkBox.toggled['bool'].connect(self.dateTimeEdit.setEnabled) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(pingWindow)
 
     def retranslateUi(self, pingWindow):
@@ -67,5 +79,7 @@ class Ui_pingWindow(object):
         self.pushButton.setText(_translate("pingWindow", "Add List"))
         self.label_2.setText(_translate("pingWindow", "Ping byteSize"))
         self.label_3.setText(_translate("pingWindow", "Ping interval (ms)"))
-        self.label_4.setText(_translate("pingWindow", "Duration (second)"))
+        self.label_duration.setText(_translate("pingWindow", "Duration (second)"))
         self.pushButton_durationUnlimited.setText(_translate("pingWindow", "infinit ping"))
+        self.dateTimeEdit.setDisplayFormat(_translate("pingWindow", "d.MM.yyyy HH:mm"))
+        self.checkBox.setText(_translate("pingWindow", "Tarih "))

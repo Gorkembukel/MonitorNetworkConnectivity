@@ -1,4 +1,5 @@
 # ping_thread.py
+from datetime import datetime
 import threading
 import time
 
@@ -8,39 +9,65 @@ from icmplib import ping as icmp_ping
 class PingThread(threading.Thread):
     
 
-    def __init__(self, target, duration, interval_ms, stats):
+    def __init__(self, address, stats,duration,isInfinite =False ,end_datetime = None,count=1, interval_ms=1, timeout=2, id=None, source=None,
+        family=None, privileged=True, **kwargs):
         super().__init__()
         self._stop_event = threading.Event()
-        self.target = target
-        self.duration = duration
-        self.interval = interval_ms / 1000
-        self.stop_time = time.time() + duration
+
+        self.address = address
         self.stats = stats
-        self.isInfinite = False
+        self.duration = duration
+        self.isInfinite = isInfinite
+        self.end_datetime = end_datetime
+        self.count = count
+        self.interval_ms = interval_ms / 1000
+        self.timeout = timeout
+        self.id = id
+        self.source = source
+        self.stop_time = time.time() + duration
+        self.family = family
+        self.privileged = privileged
+        self.kwargs = kwargs
+
         self._pause_start_time = 0
-        stats.setTarget(target)
+        stats.setAddress(address)
         self.isKill=False #threadi komple kapatır
-    def _should_continue(self):
-        return self.isInfinite or time.time() < self.stop_time
+    def _should_continue(self):#FIXME burada is kill tanımlı o yüzden diğer yerlerden kadlırabiliriz gibi
+        print("kill öncesi")
+        if self.isKill:
+            return False
+
+        now = datetime.now()
+        print(f"date  öncesi {now}")
+        # Öncelik: end_datetime varsa ve geçilmişse dur
+        if self.end_datetime:  # 🔴 Bitiş zamanı varsa onu esas al
+            return now < self.end_datetime
+        print("infinite öncesi")
+        if self.isInfinite:
+            return True
+
+        return time.time() < self.stop_time  # duration süresi dolmadıysa devam
+
     def run(self):
         
         while not self.isKill:#TODO bu while hep dönecek, kill komutu gelene kadar threadi uykuda tutacak
             while self._should_continue() and not self._stop_event.is_set():#TODO burada sürekli metot çağırılıyor performans için değiştirilebilir
                 # icmplib yöntemi
                 send_time = time.time()
-                print(f"intervaaaaaaaaaaaaaaaaaal {self.interval}")
-                result = icmp_ping(self.target, count=1, timeout=1, interval=self.interval,privileged=False)
+                print(f"[{self.address}] ➡️ icmp_ping kwargs: {self.kwargs}")
+                result = icmp_ping(address=self.address, count=self.count,interval=self.interval_ms, timeout=self.timeout, id=self.id, source=self.source,
+        family=self.family, privileged=self.privileged, **self.kwargs)
                 if result.is_alive:
                     #rtt = result.avg_rtt
                     recv_time = time.time()
                     rtt = result._rtts.pop()
                     
                     self.stats.add_result(rtt)
-                    print(f"[{self.target}] ✅ {rtt:.2f} ms (icmplib)")
+                    print(f"[{self.address}] ✅ {rtt:.2f} ms (icmplib)")
                 else:
                     self.stats.add_result(None)
-                    print(f"[{self.target}] ❌ Timeout (icmplib)")
-                time.sleep(self.interval)              
+                    print(f"[{self.address}] ❌ Timeout (icmplib)")
+                time.sleep(self.interval_ms)              
             if not self._should_continue() :# thread işlemini bitirip durdu ise threadi kapatır, kullanıcı tarafından durduruldu ise uykuya dalar
                 self.isKill = True
                 break
@@ -71,3 +98,5 @@ class PingThread(threading.Thread):
         
         if isKill:
             self.isKill = isKill
+    def getEnd_datetime(self):
+        return self.end_datetime

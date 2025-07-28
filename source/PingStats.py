@@ -74,7 +74,7 @@ class PingStats:
         return (result)
         
         
-    def setTarget(self,target):
+    def setAddress(self,target):
         self._target = target
 
     def summary(self):

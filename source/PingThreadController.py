@@ -20,20 +20,46 @@ def is_valid_ip(ip_str: str) -> bool:
     except socket.error:
         return False
 
+def filter_kwargs_for_PingThread(kwargs: dict) -> dict:
+    VALID_KWARGS = {
+        "payload",
+        "payload_size",
+        "ttl",
+        "traffic_class",
+        "count",
+        "interval",
+        "timeout",
+        "id",
+        "source",
+        "family",
+        "privileged",
+        "end_datetime"
+    }
+
+    filtered = {}
+    for k, v in kwargs.items():
+        if k in VALID_KWARGS:
+            filtered[k] = v
+        else:
+            print(f"⚠️ '{k}' geçersiz ping parametresi, atlandı.")
+    return filtered
 
 class PingTask:
-    def __init__(self, stat_list:Dict,target: str, duration: int, interval_ms: int, isInfinite: bool):
-        self.target = target
+    def __init__(self, stat_list:Dict,address: str, duration: int, interval_ms: int, isInfinite: bool, **kwargs ):
+        self.address = address
         self.duration = duration
         self.interval_ms = interval_ms
         self.isInfinite = isInfinite
-        self.stats = PingStats(target)
-        stat_list[self.target] = self.stats
+        self.stats = PingStats(address)
+
+        self.kwargs = kwargs
+
+        stat_list[self.address] = self.stats
 
         self.thread = None  # PingThread bu
 
     def start(self):
-        self.thread = PingThread(self.target, self.duration, self.interval_ms, self.stats)
+        self.thread = PingThread(address= self.address,duration= self.duration,interval_ms= self.interval_ms,stats= self.stats, **self.kwargs)
         if self.isInfinite:
             self.thread.setWhileCondition(self.isInfinite)
         self.thread.start()
@@ -50,50 +76,55 @@ class PingTask:
     def wait(self):
         if self.thread:
             self.thread.join()
+    def getEnd_datetime(self):
+        if self.thread:            
+            return self.thread.getEnd_datetime()
+        else :
+            None
 
 
 class ScapyPinger:
     def __init__(self):
-        self.tasks: Dict[str, PingTask] = {}  # key = target, value = PingTask
-        self.target_dict = {}#her ip key olup istenen çalışma parametreleri value olacak
+        self.tasks: Dict[str, PingTask] = {}  # key = address, value = PingTask
+        self.address_dict = {}#her ip key olup istenen çalışma parametreleri value olacak
         self.stats_list: Dict[str, PingStats] = {}# FIXME normalde liste burası
         
-    def add_task(self, target: str,isInfinite: bool, duration: int = 10, interval_ms: int = 1000):
-        if not is_valid_ip(target):
-            print(f"🚫 Invalid target skipped: {target}")
+    def add_task(self, address: str,isInfinite: bool, duration: int ,interval_ms: int, **kwargs  ):
+        if not is_valid_ip(address):
+            print(f"🚫 Invalid address skipped: {address}")
             return False  
     
 
-        if target in self.tasks:#TODO bu kaldırılabilir belki
-            print(f"⚠️ Target already exists: {target}")
+        if address in self.tasks:#TODO bu kaldırılabilir belki
+            print(f"⚠️ address already exists: {address}")
             return False
 
-        task = PingTask(target=target,stat_list= self.stats_list, duration=duration,interval_ms= interval_ms, isInfinite=isInfinite)
-        self.tasks[target] = task
+        task = PingTask(address=address,stat_list= self.stats_list, duration=duration,interval_ms= interval_ms, isInfinite=isInfinite,**kwargs )
+        self.tasks[address] = task
         return True
-    def target_dict_to_add_task(self):
-        targets = self.target_dict
-        for target, config in targets.items():
+    def address_dict_to_add_task(self):
+        for address, config in self.address_dict.items():
+            kwargs = config.get('kwargs', {})  # kwargs'ı al
             self.add_task(
-                target=target,
+                address=address,
                 duration=config['duration'],
                 interval_ms=config['interval_ms'],
-                isInfinite=config['isInfinite']
+                isInfinite=config['isInfinite'],
+                **kwargs  # kwargs'ı geçir
             )
 
 
-    def add_targetList(self, targets: list, interval_ms: int, duration: int, byte_size: int, isInfinite: bool):
-        
-
-        for target in targets:
-            self.target_dict[target] = {
+    def add_addressList(self, addresses: list, interval_ms: int, duration: int, isInfinite: bool, **kwargs):
+        filteredKwarg = filter_kwargs_for_PingThread(kwargs=kwargs)
+        for address in addresses:
+            self.address_dict[address] = {
                 'interval_ms': interval_ms,
-                'duration': duration,
-                'byteSize': byte_size,
-                'isInfinite': isInfinite
-
+                'duration': duration,                
+                'isInfinite': isInfinite,
+                'kwargs': filteredKwarg  
             }
-        self.target_dict_to_add_task()
+        self.address_dict_to_add_task()
+
 
     def start_all(self):
         for task in self.tasks.values():
@@ -108,14 +139,14 @@ class ScapyPinger:
         return sum(task.is_alive() for task in self.tasks.values())
 
     """def get_stats_map(self):
-        return {target: task.stats for target, task in self.tasks.items()}"""
+        return {address: task.stats for address, task in self.tasks.items()}"""
 
-    def get_task(self, target):
-        return self.tasks.get(target)
+    def get_task(self, address):
+        return self.tasks.get(address)
 
-    def add_and_start(self, target: str, duration: int = 10, interval_ms: int = 1000):
-        if self.task(target, duration, interval_ms):
-            self.tasks[target].start()
+    def add_and_start(self, address: str, duration: int = 10, interval_ms: int = 1000):
+        if self.task(address, duration, interval_ms):
+            self.tasks[address].start()
 
     def find_all_stats(self): #FIXME adı gui kodunda ve vurada değişmeli
        
