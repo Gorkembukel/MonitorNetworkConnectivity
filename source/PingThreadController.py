@@ -4,7 +4,7 @@ from scapy.all import ICMP, IP, sr1
 import time
 import ipaddress
 import socket
-from source.PingThread import PingThread
+from source.PingThread import PingThread, Behivior
 from source.PingStats import PingStats
 from typing import Dict, List
 
@@ -60,9 +60,10 @@ class PingTask:
         self.thread = None  # PingThread bu
 
     def start(self):
-        self.thread = PingThread(address= self.address,duration= self.duration,interval_ms= self.interval_ms,stats= self.stats, isInfinite=self.isInfinite,**self.kwargs)
+        self.thread = Behivior(address= self.address,duration= self.duration,interval_ms= self.interval_ms,stats= self.stats, isInfinite=self.isInfinite,**self.kwargs)
         
         self.thread.start()
+        
     def stop(self,**kargs):
         print("stop_address kargs:", kargs)#FIXME geçici
         if self.thread:

@@ -1,0 +1,160 @@
+from __future__ import annotations
+from abc import ABC, abstractmethod
+import threading
+from typing import List
+import time
+from icmplib import ping as icmp_ping
+from datetime import datetime
+
+
+class Context():
+    """
+    The Context defines the interface of interest to clients.
+    """
+
+    def __init__(self, strategy: Strategy) -> None:
+        """
+        Usually, the Context accepts a strategy through the constructor, but
+        also provides a setter to change it at runtime.
+        """
+
+        self._strategy = strategy
+
+    @property
+    def strategy(self) -> Strategy:
+        """
+        The Context maintains a reference to one of the Strategy objects. The
+        Context does not know the concrete class of a strategy. It should work
+        with all strategies via the Strategy interface.
+        """
+
+        return self._strategy
+
+    @strategy.setter
+    def strategy(self, strategy: Strategy) -> None:
+        """
+        Usually, the Context allows replacing a Strategy object at runtime.
+        """
+
+        self._strategy = strategy
+
+    def do_some_algorithm(self, **kwargs) -> None:
+        """
+        The Context delegates some work to the Strategy object instead of
+        implementing multiple versions of the algorithm on its own.
+        """
+      
+        # ...
+
+        
+
+        # ...
+
+        print("Ping başlatılıyor...")
+        self.strategy.startPing(**kwargs)
+    
+
+class Strategy(ABC):
+    """
+    The Strategy interface declares operations common to all supported versions
+    of some algorithm.
+
+    The Context uses this interface to call the algorithm defined by Concrete
+    Strategies.
+    """
+
+    @abstractmethod
+    def startPing(self, **kwargs):
+        pass
+    @abstractmethod
+    def stop(self, **kwargs):
+        pass
+
+"""
+Concrete Strategies implement the algorithm while following the base Strategy
+interface. The interface makes them interchangeable in the Context.
+"""
+
+
+class TaskThread(threading.Thread):
+    def __init__(self, **kwargs):       
+        super().__init__()
+        
+        self.kwargs = kwargs
+        self._stop_event = threading.Event()
+
+        self.isKill=False
+    def run(self):
+        self.ping_task(**self.kwargs)
+    
+    def stop(self,isToggle=False, isKill=False):
+        print(f"thread içi stop")
+        if isToggle:
+            if self._stop_event.is_set():
+                paused_duration = time.time() - self._pause_start_time
+                self.stop_time += paused_duration
+                self._stop_event.clear()
+            else:
+                self._pause_start_time = time.time()
+                self._stop_event.set()
+    
+        if isKill:
+            self.isKill = isKill
+    def ping_task(self, address, stats,duration,isInfinite =False ,end_datetime = None,count=1, interval_ms=1, timeout=2, id=None, source=None,
+        family=None, privileged=True, **kwargs):          
+
+        self.stop_time = time.time() + duration if duration else None#FIXME burada sıkıntı olabilir, taks başlayana kadar time.time() geride kalabilir
+
+        while not self.isKill:
+            
+
+            while _should_continue() and not self._stop_event.is_set():
+                send_time = time.time()
+
+                print(f"[{address}] ➡️ icmp_ping kwargs: {kwargs}")
+                result = icmp_ping(address=address, count=count, interval=interval_ms, timeout=timeout,
+                                id=id, source=source, family=family, privileged=privileged, **kwargs)
+                if result.is_alive:
+                    rtt = result._rtts.pop()
+                    recv_time = time.time()#HACK bura gereksiz olabilir
+                    stats.add_result(rtt)
+                    print(f"[{address}] ✅ {rtt:.2f} ms (icmplib)")
+                else:
+                    stats.add_result(None)
+                    print(f"[{address}] ❌ Timeout (icmplib)")
+
+                reply_time = time.time() - send_time
+                sleep_time = interval_ms - reply_time
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
+
+                pulse = time.time() - send_time
+                stats.update_rate(pulse)
+
+            if not _should_continue():
+                break
+
+            time.sleep(2)
+
+
+
+class LowRatePing(Strategy):
+    def __init__(self):
+        self.stop_event = threading.Event()
+        self.isKill=False
+    def startPing(self, **kwargs):
+        self.thread = TaskThread(**kwargs)       
+        
+        self.thread.start()
+        print(f" arka planda başlatıldı.")
+        return self.thread  # ✅ thread'i döndür
+    
+    
+    
+
+    def stop(self,**kwargs):
+      self.thread.stop(**kwargs)
+
+class HighRatePing(Strategy):
+    def startPing(self,**kwargs ):
+        pass

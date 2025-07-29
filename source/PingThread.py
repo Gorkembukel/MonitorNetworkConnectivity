@@ -4,78 +4,63 @@ import threading
 import time
 import beepy
 
+from source.PingStrategy import  Context,LowRatePing, HighRatePing
 from source.PingStats import PingStats
 from icmplib import ping as icmp_ping
 import struct
 from icmplib.sockets import ICMPv4Socket
 from icmplib.models import ICMPRequest
 
-class HighRatePing():
+class Behivior():
+    criticle_threshHold_ms = 30# eğer interval bunun altında ise standart ping yetmez
     def __init__(self, address, stats,duration,isInfinite =False ,end_datetime = None,count=1, interval_ms=1, timeout=2, id=None, source=None,
         family=None, privileged=True, **kwargs):
-        super().__init__()
-        self._stop_event = threading.Event()
+        self.interval_ms = interval_ms
+        params = {
+        "address": address,
+        "stats": stats,
+        "duration": duration,
+        "interval_ms": interval_ms,
+        "isInfinite": isInfinite,
+        "end_datetime": end_datetime,
+        "count": count,
+        "timeout": timeout,
+        "id": id,
+        "source": source,
+        "family": family,
+        "privileged": privileged,
+        **kwargs  # kwargs ekle
+        }
+        
+        
+        self.context = self.decide_strategy()
+        #self.thread = self.context.strategy.startPing(**params)  # ✅ doğrudan al
+        self.context.do_some_algorithm(**params)
 
-        self.address = address
-        self.stats = stats
-        self.duration = duration
-        self.isInfinite = isInfinite
-        self.end_datetime = end_datetime
-        self.count = count
-        self.interval_ms = interval_ms / 1000
-        self.timeout = timeout
-        self.id = id
-        self.source = source
-        self.stop_time = time.time() + duration if duration else None
-        self.family = family
-        self.privileged = privileged
-        self.kwargs = kwargs
 
-    def create_payload():
-        """Zaman bilgisi taşıyan payload (8 bayt timestamp)."""
-        return struct.pack('!d', time.time())
+       
 
-    def sender():
-        global sequence_number
-        count = 1
-        while True:
-            sequence_number += 1
-            try:
-                
-                request = ICMPRequest(
-                    destination=TARGET_IP,
-                    id=IDENTIFIER,
-                    sequence=sequence_number,
-                    payload_size=1024
-                )
-                sock.send(request)
-                print(f"[>] Ping #{count} sent")  # ← sayaç her gönderimde yazılır
-                count += 1
-                
+    def decide_strategy(self) -> Context:
+        if Behivior.criticle_threshHold_ms < self.interval_ms:
+            return Context(LowRatePing())
+        
+        else:
+            return Context(HighRatePing())
+        
+        
+    def takeComand():
+        pass
+    def optimizeBuffersize():
+        pass
 
-            except Exception as e:
-                print(f"[!] Send error: {e}")
-
-    def receiver():
-        while True:
-            try:
-                # Ham paketi al
-                packet_raw, addr = sock._sock.recvfrom(1024)
-                reply = sock.decode(packet_raw)
-
-                # Filtre: sadece bizim attığımız paketler
-                if reply.id != IDENTIFIER or reply.sequence is None:
-                    continue
-
-                if len(reply.payload) >= 8:
-                    send_time = struct.unpack('!d', reply.payload[:8])[0]
-                    rtt = (time.time() - send_time) * 1000
-                    print(f"[<] Reply from {reply.source}: seq={reply.sequence} time={rtt:.2f} ms")
-                else:
-                    print(f"[<] Reply from {reply.source}: seq={reply.sequence} (no timestamp)")
-
-            except Exception as e:
-                print(f"[!] Receive error: {e}")
+    # bir threadin yerine geçirdiğimiz için thread fonksiyonları tanımlıyoruz sistemin geri kalanında değişime gitmemek için
+    def stop(self,**kwargs):
+        self.context.strategy.stop(**kwargs)
+        
+    def is_alive(self): # FIXME geçici
+        return True
+    def start(self):#
+        pass
 
 
 
