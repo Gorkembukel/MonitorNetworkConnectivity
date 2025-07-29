@@ -1,0 +1,11 @@
+# Python derlenmiş dosyalar
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Sanal ortam klasörleri
+.venv/
+venv/
+env/

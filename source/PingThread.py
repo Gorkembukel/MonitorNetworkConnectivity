@@ -2,8 +2,8 @@
 from datetime import datetime
 import threading
 import time
+import beepy
 
-from scapy.all import IP, ICMP, sr1
 from source.PingStats import PingStats
 from icmplib import ping as icmp_ping
 import struct
