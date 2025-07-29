@@ -33,7 +33,8 @@ def filter_kwargs_for_PingThread(kwargs: dict) -> dict:
         "source",
         "family",
         "privileged",
-        "end_datetime"
+        "end_datetime",
+        "isInfinte"
     }
 
     filtered = {}
@@ -59,9 +60,8 @@ class PingTask:
         self.thread = None  # PingThread bu
 
     def start(self):
-        self.thread = PingThread(address= self.address,duration= self.duration,interval_ms= self.interval_ms,stats= self.stats, **self.kwargs)
-        if self.isInfinite:
-            self.thread.setWhileCondition(self.isInfinite)
+        self.thread = PingThread(address= self.address,duration= self.duration,interval_ms= self.interval_ms,stats= self.stats, isInfinite=self.isInfinite,**self.kwargs)
+        
         self.thread.start()
     def stop(self,**kargs):
         print("stop_address kargs:", kargs)#FIXME geçici

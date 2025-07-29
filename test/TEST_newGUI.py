@@ -140,7 +140,7 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
                                                                # doğru gelmedi. bu argümanlar boş olduğunda add_addresslist'e geçmeyecek şekilde düzenlemek daha doğru olur
 
         interval_ms = self.ui.spinBox_interval.value()
-        isInfinite = self.isInfinite
+        isInfinite = self.ui.pushButton_durationUnlimited.isChecked()
         duration = self.ui.spinBox_duration.value() if self.ui.spinBox_duration.isEnabled() else None# kutu aktif değilse değerini okumaz
 
         qt_datetime = None
@@ -151,7 +151,7 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
             kwargs["end_datetime"] = qt_datetime.toPyDateTime()#pingThread'de date objesi olarak kullanılır
         
         
-
+        print(f"is infinite gui {isInfinite}")
         scapyPinger_global.add_addressList(addresses=addresses, interval_ms=interval_ms, duration= duration,isInfinite=isInfinite, payload_size = payload_size,**kwargs)
         text = ""
         interval_ms = None
