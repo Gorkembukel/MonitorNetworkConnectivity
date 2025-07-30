@@ -3,6 +3,7 @@ from pyqtgraph import PlotWidget
 import pyqtgraph as pg
 from QTDesigns.graph_window import Ui_Dialog_graphWindow
 import time
+from pyqtgraph import DateAxisItem  
 class GraphWindow(QDialog):
     @staticmethod
     def create_rate_widget():
@@ -50,7 +51,10 @@ class GraphWindow(QDialog):
 
     def setup_tabs(self):
         # 1️⃣ RTT → tab
-        rtt_plot = PlotWidget()
+        
+        axis = DateAxisItem(orientation='bottom',utcOffset=3)
+        rtt_plot = PlotWidget(axisItems={'bottom': axis})  # ✅ Doğru kullanım
+        rtt_plot.setTitle(f"RTT for {self.stat_obj.target}")  # ⬅ stat_obj çünkü GraphWindow sınıfındasın
         curve = self.stat_obj.get_rtt_curve()
         rtt_plot.addItem(curve)
         layout1 = QVBoxLayout()
@@ -75,7 +79,7 @@ class GraphWindow(QDialog):
         layout3.addWidget(succ_plot)
         self.ui.tab_3.setLayout(layout3)
         self.plot_refs['success'] = bar2
-
+       
         # 4️⃣ Min/Max → tab_4
         minmax_plot = PlotWidget()
         for line in self.stat_obj.get_min_max_lines():
@@ -86,9 +90,20 @@ class GraphWindow(QDialog):
 
     def update_plots(self):
         if 'rtt' in self.plot_refs:
-            self.plot_refs['rtt'].setData([r if r is not None else -1 for r in self.stat_obj._rttList])
+            if 'rtt' in self.plot_refs:
+                data = self.stat_obj.get_time_series_data()  # (timestamp, rtt) listesi
+                if data:
+                    x, y = zip(*data)
+                    self.plot_refs['rtt'].setData(x, y)
         if 'jitter' in self.plot_refs:
             self.plot_refs['jitter'].setOpts(height=[self.stat_obj.jitter])
         if 'success' in self.plot_refs:
-            self.plot_refs['success'].setOpts(height=[self.stat_obj.received, self.stat_obj.failed])
-    
+            total = self.stat_obj.sent
+            if total == 0:
+                success_pct = 0
+                fail_pct = 0
+            else:
+                success_pct = self.stat_obj.received / total * 100
+                fail_pct = self.stat_obj.failed / total * 100
+
+            self.plot_refs['success'].setOpts(height=[success_pct, fail_pct])

@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_pingWindow(object):
     def setupUi(self, pingWindow):
         pingWindow.setObjectName("pingWindow")
-        pingWindow.resize(572, 526)
+        pingWindow.resize(593, 526)
         self.plainTextEdit = QtWidgets.QPlainTextEdit(pingWindow)
         self.plainTextEdit.setGeometry(QtCore.QRect(20, 30, 321, 311))
         self.plainTextEdit.setObjectName("plainTextEdit")
@@ -25,7 +25,7 @@ class Ui_pingWindow(object):
         self.pushButton.setGeometry(QtCore.QRect(380, 330, 89, 25))
         self.pushButton.setObjectName("pushButton")
         self.formLayoutWidget = QtWidgets.QWidget(pingWindow)
-        self.formLayoutWidget.setGeometry(QtCore.QRect(340, 30, 247, 316))
+        self.formLayoutWidget.setGeometry(QtCore.QRect(340, 30, 274, 316))
         self.formLayoutWidget.setObjectName("formLayoutWidget")
         self.formLayout = QtWidgets.QFormLayout(self.formLayoutWidget)
         self.formLayout.setContentsMargins(0, 0, 0, 0)
@@ -40,10 +40,6 @@ class Ui_pingWindow(object):
         self.label_3 = QtWidgets.QLabel(self.formLayoutWidget)
         self.label_3.setObjectName("label_3")
         self.formLayout.setWidget(9, QtWidgets.QFormLayout.LabelRole, self.label_3)
-        self.spinBox_interval = QtWidgets.QSpinBox(self.formLayoutWidget)
-        self.spinBox_interval.setMaximum(99999)
-        self.spinBox_interval.setObjectName("spinBox_interval")
-        self.formLayout.setWidget(10, QtWidgets.QFormLayout.LabelRole, self.spinBox_interval)
         self.label_duration = QtWidgets.QLabel(self.formLayoutWidget)
         self.label_duration.setObjectName("label_duration")
         self.formLayout.setWidget(15, QtWidgets.QFormLayout.LabelRole, self.label_duration)
@@ -64,12 +60,32 @@ class Ui_pingWindow(object):
         self.checkBox = QtWidgets.QCheckBox(self.formLayoutWidget)
         self.checkBox.setObjectName("checkBox")
         self.formLayout.setWidget(17, QtWidgets.QFormLayout.FieldRole, self.checkBox)
+        self.checkBox_KillMod = QtWidgets.QCheckBox(self.formLayoutWidget)
+        self.checkBox_KillMod.setEnabled(True)
+        self.checkBox_KillMod.setObjectName("checkBox_KillMod")
+        self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.checkBox_KillMod)
+        self.spinBox_interval = QtWidgets.QSpinBox(self.formLayoutWidget)
+        self.spinBox_interval.setMaximum(99999)
+        self.spinBox_interval.setObjectName("spinBox_interval")
+        self.formLayout.setWidget(10, QtWidgets.QFormLayout.LabelRole, self.spinBox_interval)
+        self.spinBox_timeout = QtWidgets.QSpinBox(self.formLayoutWidget)
+        self.spinBox_timeout.setMaximum(99999)
+        self.spinBox_timeout.setProperty("value", 300)
+        self.spinBox_timeout.setObjectName("spinBox_timeout")
+        self.formLayout.setWidget(10, QtWidgets.QFormLayout.FieldRole, self.spinBox_timeout)
+        self.label_4 = QtWidgets.QLabel(self.formLayoutWidget)
+        self.label_4.setObjectName("label_4")
+        self.formLayout.setWidget(9, QtWidgets.QFormLayout.FieldRole, self.label_4)
 
         self.retranslateUi(pingWindow)
         self.pushButton_durationUnlimited.clicked['bool'].connect(self.spinBox_duration.setDisabled) # type: ignore
         self.checkBox.toggled['bool'].connect(self.spinBox_duration.setDisabled) # type: ignore
         self.checkBox.toggled['bool'].connect(self.pushButton_durationUnlimited.setDisabled) # type: ignore
         self.checkBox.toggled['bool'].connect(self.dateTimeEdit.setEnabled) # type: ignore
+        self.checkBox_KillMod.toggled['bool'].connect(self.spinBox_interval.setDisabled) # type: ignore
+        self.checkBox_KillMod.toggled['bool'].connect(self.spinBox_duration.setDisabled) # type: ignore
+        self.checkBox_KillMod.toggled['bool'].connect(self.pushButton_durationUnlimited.setDisabled) # type: ignore
+        self.checkBox_KillMod.toggled['bool'].connect(self.checkBox.setDisabled) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(pingWindow)
 
     def retranslateUi(self, pingWindow):
@@ -83,3 +99,5 @@ class Ui_pingWindow(object):
         self.pushButton_durationUnlimited.setText(_translate("pingWindow", "infinit ping"))
         self.dateTimeEdit.setDisplayFormat(_translate("pingWindow", "d.MM.yyyy HH:mm"))
         self.checkBox.setText(_translate("pingWindow", "Tarih "))
+        self.checkBox_KillMod.setText(_translate("pingWindow", "Kill Mod"))
+        self.label_4.setText(_translate("pingWindow", "time out (ms)"))

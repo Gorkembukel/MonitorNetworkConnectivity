@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>572</width>
+    <width>593</width>
     <height>526</height>
    </rect>
   </property>
@@ -54,7 +54,7 @@
     <rect>
      <x>340</x>
      <y>30</y>
-     <width>247</width>
+     <width>274</width>
      <height>316</height>
     </rect>
    </property>
@@ -77,13 +77,6 @@
      <widget class="QLabel" name="label_3">
       <property name="text">
        <string>Ping interval (ms)</string>
-      </property>
-     </widget>
-    </item>
-    <item row="10" column="0">
-     <widget class="QSpinBox" name="spinBox_interval">
-      <property name="maximum">
-       <number>99999</number>
       </property>
      </widget>
     </item>
@@ -131,6 +124,40 @@
      <widget class="QCheckBox" name="checkBox">
       <property name="text">
        <string>Tarih </string>
+      </property>
+     </widget>
+    </item>
+    <item row="3" column="1">
+     <widget class="QCheckBox" name="checkBox_KillMod">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="text">
+       <string>Kill Mod</string>
+      </property>
+     </widget>
+    </item>
+    <item row="10" column="0">
+     <widget class="QSpinBox" name="spinBox_interval">
+      <property name="maximum">
+       <number>99999</number>
+      </property>
+     </widget>
+    </item>
+    <item row="10" column="1">
+     <widget class="QSpinBox" name="spinBox_timeout">
+      <property name="maximum">
+       <number>99999</number>
+      </property>
+      <property name="value">
+       <number>300</number>
+      </property>
+     </widget>
+    </item>
+    <item row="9" column="1">
+     <widget class="QLabel" name="label_4">
+      <property name="text">
+       <string>time out (ms)</string>
       </property>
      </widget>
     </item>
@@ -200,6 +227,70 @@
     <hint type="destinationlabel">
      <x>414</x>
      <y>274</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_KillMod</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>spinBox_interval</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>539</x>
+     <y>77</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>377</x>
+     <y>163</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_KillMod</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>spinBox_duration</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>539</x>
+     <y>77</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>377</x>
+     <y>242</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_KillMod</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>pushButton_durationUnlimited</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>539</x>
+     <y>77</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>539</x>
+     <y>242</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>checkBox_KillMod</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>checkBox</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>539</x>
+     <y>77</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>539</x>
+     <y>273</y>
     </hint>
    </hints>
   </connection>

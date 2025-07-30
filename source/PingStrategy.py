@@ -1,5 +1,6 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
+import subprocess
 import threading
 from typing import List
 import time
@@ -9,11 +10,20 @@ import threading
 import time
 import os
 import socket
+from playsound import playsound
 from icmplib.sockets import ICMPv4Socket
 from icmplib.models import ICMPRequest
 from icmplib.exceptions import ICMPSocketError, TimeoutExceeded, ICMPError
 import multiprocessing
 from source.PingStats import PingStats
+# Bu dosyanın  bulunduğu dizini al
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+#  klasörünün bir üstüne çık, source/targets.txt'yi hedefle
+sound_path = os.path.join(BASE_DIR, "..","audio_data","ping.wav")
+
+# Mutlak yola çevir (temizlik için)
+sound_path = os.path.abspath(sound_path)
 
 
 class Context():
@@ -61,7 +71,8 @@ class Context():
 
         print("Ping başlatılıyor...")
         self.strategy.startPing(**kwargs)
-        
+    def update_parameters(self, **kwargs):
+        self.strategy.update_parameter(**kwargs)
 
 class Strategy(ABC):
     """
@@ -78,7 +89,12 @@ class Strategy(ABC):
     @abstractmethod
     def stop(self, **kwargs):
         pass
-
+    @abstractmethod
+    def getEnd_datetime(self,**kwargs):
+        pass
+    @abstractmethod
+    def update_parameter(self,**kwargs):
+        pass
 """
 Concrete Strategies implement the algorithm while following the base Strategy
 interface. The interface makes them interchangeable in the Context.
@@ -108,7 +124,7 @@ class Worker(threading.Thread):
         self.family = family
         self.privileged = privileged
         self.kwargs = kwargs
-
+        self.isBeep = False
         self._pause_start_time = 0
         stats.setAddress(address)
         self.isKill=False #threadi komple kapatır
@@ -142,13 +158,18 @@ class Worker(threading.Thread):
                     #rtt = result.avg_rtt
                     
                     rtt = result._rtts.pop()
-                    recv_time = time.time()
-                    self.stats.add_result(rtt)
                     
+                    self.stats.add_result(rtt, time.time() + 10800) #    istanbula göre UTC 3
+                    
+                    #ses için
+                    print(f"beepy dışı {self.isBeep}")
+                    if self.isBeep:
+                        print('\a')
                     print(f"[{self.address}] ✅ {rtt:.2f} ms (icmplib)")
                 else:
                     self.stats.add_result(None)
                     print(f"[{self.address}] ❌ Timeout (icmplib)")
+                recv_time = time.time()
                 reply_time = recv_time -send_time
                 sleep_time = self.interval_ms - reply_time# threadin tam olarak interval kadar uyuması için ping atma süresi kadar çıkartıyorum çünkü zaten o kadar zaman geçiyo             
                 if sleep_time > 0:
@@ -201,6 +222,10 @@ class Worker(threading.Thread):
             self.isInfinite = isInfinite
         if kwargs:
             self.kwargs.update(kwargs)
+    def toggleBeep(self):
+        if self.isBeep:
+            self.isBeep=False
+        else:self.isBeep=True
 
         print(f"[{self.address}] 🔁 Thread parametreleri güncellendi.")
 
@@ -217,11 +242,16 @@ class LowRatePing(Strategy):
         print(f" arka planda başlatıldı.")
         return self.thread  # ✅ thread'i döndür
     
-    
-    
+    def toggleBeep(self):
+        print("lowrate strtategy toggle beep içi")#BUG  temizle 
+        self.thread.toggleBeep()
+    def update_parameter(self, **kwargs):
+        self.thread.update_parameters(**kwargs)
+    def getEnd_datetime(self):
+        self.thread.getEnd_datetime()
 
     def stop(self,**kwargs):
-      self.thread.stop(**kwargs)
+        self.thread.stop(**kwargs)
       
 class HighRatePing(Strategy):
     def __init__(self, max_buffer_mb=64):
@@ -235,36 +265,41 @@ class HighRatePing(Strategy):
         self.sender_thread = None
         self.receiver_thread = None
         self.process = None  # 🔴 Yeni eklendi
-
-    def startPing(self, address, interval_ms, payload_size, stats, **kwargs):
+        self.processes = []
+    def getEnd_datetime(self):
+        pass
+    def startPing(self, address, interval_ms, payload_size, stats,num_processes,isKill_Mod =False,**kwargs):
         print("🚀 HighRatePing process içinde başlatılıyor...")
-
+        self.isKill_Mod = isKill_Mod
         self.address = address
         self.interval_ms = interval_ms / 1000
         self.payload_size = payload_size
         self.stats = stats
 
-        self.process = multiprocessing.Process(
-            target=self._start_threads_in_process,
-            args=()
-        )
-        self.process.start()
+        
+        for i in range(num_processes):
+            proc = multiprocessing.Process(
+                target=self._start_threads_in_process,
+                args=(i, num_processes)
+            )
+            proc.start()
+            self.processes.append(proc)
 
-    def _start_threads_in_process(self):
-        # Yeni process içindeki işlemler
-        import os
-        print(f"[Process PID {os.getpid()}] ⏱ Başlatıldı.")
+    def _start_threads_in_process(self, proc_index, total_processes):
+        
+        
+
+        print(f"[Process #{proc_index}] PID={os.getpid()} ✅ Başlatıldı.")
 
         self.sock = ICMPv4Socket()
         self.sock._sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, self.send_buffer_size)
 
-        self.sender_thread = threading.Thread(target=self._sender, daemon=True)
-        self.receiver_thread = threading.Thread(target=self._receiver, daemon=True)
+        self.sender_thread = threading.Thread(target=self._sender, args=(proc_index,), daemon=True)
+        self.receiver_thread = threading.Thread(target=self._receiver, args=(proc_index,), daemon=True)
 
         self.sender_thread.start()
         self.receiver_thread.start()
 
-        # Bu thread’ler bitene kadar bekle
         self.sender_thread.join()
         self.receiver_thread.join()
 
@@ -280,65 +315,53 @@ class HighRatePing(Strategy):
     def is_alive(self):
         return self.process and self.process.is_alive()
 
+    def _sender(self, proc_index):
+            count = 1
+            while not self.stop_event.is_set():
+                self.sequence_number += 1
+                send_time = time.time()
+                request = ICMPRequest(
+                    destination=self.address,
+                    id=(self.IDENTIFIER + proc_index),  # Her process farklı ID alsın
+                    sequence=self.sequence_number,
+                    payload_size=self.payload_size
+                )
+                request._time = time.time()
+                self.request_times = {request.sequence: request._time}  # sadeleştirdik
 
-    def _sender(self):
-        count = 1
-        while not self.stop_event.is_set():
-            self.sequence_number += 1
-            sendTime = time.time()
-            request = ICMPRequest(
-                destination=self.address,
-                id=self.IDENTIFIER,
-                sequence=self.sequence_number,
-                payload_size=self.payload_size
-            )
-            request._time = time.time()
-            self.request_times[request.sequence] = request._time
+                try:
+                    self.sock.send(request)
+                    print(f"[Proc {proc_index}] [>] Ping #{count} sent (seq={request.sequence})")
+                    count += 1
+                except Exception as e:
+                    print(f"[Proc {proc_index}] [!] Send error: {e}")
 
-            try:
-                self.sock.send(request)
-                print(f"[>] Ping #{count} sent (seq={request.sequence}, buffer={self.send_buffer_size})")
-                count += 1
-            except ICMPSocketError as e:
-                err = str(e)
-                print(f"[!] Send error: {err}")
-
-                if "No buffer space available" in err and self.send_buffer_size < self.MAX_BUFFER_SIZE:
-                    self.send_buffer_size *= 2
-                    try:
-                        self.sock._sock.setsockopt(socket.SOL_SOCKET, socket.SO_SNDBUF, self.send_buffer_size)
-                        print(f"[~] Increased send buffer to {self.send_buffer_size} bytes")
-                    except Exception as set_err:
-                        print(f"[x] Failed to increase buffer: {set_err}")
-                else:
-                    print(f"[x] Unhandled socket error: {e}")
-            except Exception as e:
-                print(f"[!] Unexpected send error: {e}")
-            now = time.time()
-            sleepTime = self.interval_ms -(now -sendTime)
-            if sleepTime > 0:
-                pass
-                #time.sleep(sleepTime)
-    
-    def _receiver(self):
-        while not self.stop_event.is_set():
-            try:
-                reply = self.sock.receive(timeout=1)#HACK bura eksik timeout değerini almalı
-
-                if reply is None or reply.id != self.IDENTIFIER:
-                    continue
-
-                send_time = self.request_times.get(reply.sequence)
-                if send_time:
-                    rtt = (reply.time - send_time) * 1000
-                    self.stats.add_result(rtt)
+                now = time.time()
+                sleep_time = (self.interval_ms / 1000) - (now - send_time)
+                if sleep_time > 0 and not self.isKill_Mod :                  
                     
-                else:
-                    print(f"[<] Reply from {reply.source}: seq={reply.sequence} (no timing info)")
+                    time.sleep(sleep_time)
 
-            except TimeoutExceeded:
-                continue
-            except ICMPError as e:
-                print(f"[!] ICMP error: {e}")
+    def _receiver(self, proc_index):
+        while not self.stop_event.is_set():
+            try:
+                reply = self.sock.receive(timeout=1)
+                if reply is None or reply.id != (self.IDENTIFIER + proc_index):
+                    continue
+                rtt = (reply.time - self.request_times.get(reply.sequence, reply.time)) * 1000
+                self.stats.add_result(rtt)
+                print(f"[Proc {proc_index}] [<] Reply seq={reply.sequence} RTT={rtt:.2f} ms")
             except Exception as e:
-                print(f"[!] Receive error: {e}")
+                print(f"[Proc {proc_index}] [!] Receive error: {e}")
+
+    def stop(self):
+        print("🛑 Tüm prosesler durduruluyor...")
+        self.stop_event.set()
+        for proc in self.processes:
+            if proc.is_alive():
+                proc.terminate()
+                proc.join()
+        self.processes.clear()
+        print("✅ Hepsi durdu.")
+    def update_parameter(self,**kwargs):
+        pass

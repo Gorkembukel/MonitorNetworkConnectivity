@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import List, Dict
 from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog,QTableWidgetItem,QMenu
 from PyQt5.QtCore import QTimer,QThread, pyqtSignal,Qt,QTime,QDateTime
-from PyQt5.QtGui import QColor
+from PyQt5.QtGui import QColor,QPalette
 from QTDesigns.MainWindow import Ui_MonitorNetWorkConnectivity
 from QTDesigns.PingWindow import Ui_pingWindow
 from QTDesigns.Change_parameters import Ui_Dialog_changeParameter
@@ -45,6 +45,7 @@ class ChangeParameterWindow(QDialog):
         self.dissableTabsExcept()
 
         self.ui.pushButton_settChages.clicked.connect(self.applyChange)
+
     def dissableTabsExcept(self):
         tabCount = self.ui.tabWidget.count()
         print(f"tab count {tabCount}")
@@ -95,21 +96,40 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
     def __init__(self, parent= None):
         super().__init__(parent)
         self.ui = Ui_pingWindow()
+        self.original_color = self.palette().color(QPalette.Window)
         self.parent = parent
         self.ui.setupUi(self)
         self.data = Pass_Data_ScapyPinger()
         self.isInfinite = False
-        
+        self.isKill_Mod = False
          # Butona tıklanınca işlem yapılacak
         self.ui.pushButton.clicked.connect(self.extract_addresses)
         self.ui.pushButton_durationUnlimited.clicked.connect(self.setIsInfinite)
-
+        self.ui.checkBox_KillMod.setHidden(True)
+        #self.ui.checkBox_KillMod.clicked.connect(self.toggleKill_Mod)
         now = datetime.now()
         
         self.ui.dateTimeEdit.setDateTime(QDateTime.currentDateTime())
         self.ui.dateTimeEdit.setMinimumDate(now)
 
         self.ui.checkBox.toggled.connect(self.changeDurationLabel)
+    def toggleKill_Mod(self):
+        
+        palette = self.palette()
+        if self.ui.dateTimeEdit.isEnabled():
+            
+            self.ui.dateTimeEdit.setDisabled(True)
+        if self.isKill_Mod:
+            palette.setColor(QPalette.Window, self.original_color)
+            self.setPalette(self.parent.palette())
+            
+            self.isKill_Mod = False
+        if not self.isKill_Mod:
+            palette.setColor(QPalette.Window, QColor("red"))
+                
+            self.isKill_Mod = True
+        
+        self.setPalette(palette)
     def setIsInfinite(self):    
         if self.isInfinite:
             self.isInfinite =False
@@ -126,7 +146,7 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
         headers = list(get_data_keys())
         kwargs = {}#scapypinger için argümanlar.Eklemek istediğiniz armünanları pingthreadController içindeki filtre metoduna tanıtmalısınız 
                    #PingThreadController ->PingThread ->icmplib ping ->ICMPRequest
-
+        text = ""
         # 1️⃣ PlainTextEdit içeriğini al
         text = self.ui.plainTextEdit.toPlainText()
         # 2️⃣ Satırları ayır ve boş olmayanları döndür
@@ -142,6 +162,7 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
         interval_ms = self.ui.spinBox_interval.value()
         isInfinite = self.ui.pushButton_durationUnlimited.isChecked()
         duration = self.ui.spinBox_duration.value() if self.ui.spinBox_duration.isEnabled() else None# kutu aktif değilse değerini okumaz
+        timeout = self.ui.spinBox_timeout.value() / 1000 #ms çevirisi
 
         qt_datetime = None
         if self.ui.dateTimeEdit.isEnabled():
@@ -152,11 +173,12 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
         
         
         print(f"is infinite gui {isInfinite}")
-        scapyPinger_global.add_addressList(addresses=addresses, interval_ms=interval_ms, duration= duration,isInfinite=isInfinite, payload_size = payload_size,**kwargs)
+        scapyPinger_global.add_addressList(timeout = timeout ,addresses=addresses,isKill_Mod=self.isKill_Mod,interval_ms=interval_ms, duration= duration,isInfinite=isInfinite, payload_size = payload_size,**kwargs)
         text = ""
         interval_ms = None
         isInfinite = None
         duration = None
+        
         qt_datetime = None
         kwargs = None
 
@@ -195,6 +217,7 @@ class MainWindow(QMainWindow):
         task = scapyPinger_global.get_task(address=address)
         statObject = task.stats
         self.graphWindow = GraphWindow(stat_obj=statObject,parent=self)
+        self.graphWindow.setWindowFlags(Qt.Window | Qt.WindowMinMaxButtonsHint | Qt.WindowCloseButtonHint)
         self.graphWindow.show()
     def ip_stop(self, address:str, **kargs):
         print("stop_address kargs:", kargs)#FIXME geçici
@@ -204,6 +227,9 @@ class MainWindow(QMainWindow):
         scapyPinger_global.stop_address(address=address,isKill=True)
         scapyPinger_global.delete_stats(address=address)
         
+    def toggleBeep_by_address(self,address:str):#
+        global scapyPinger_global   
+        scapyPinger_global.toggleBeep_by_address(address=address)
         
      #burada rowdaki veriler alınıp açılan pencereye aktarılmalı böylece rowdaki ip kontrol edilmiş olunur
     def eventFilter(self, source, event):
@@ -232,8 +258,10 @@ class MainWindow(QMainWindow):
             #Qmenu, ip_control_interface için action menusu
             ip_control_menu = QtWidgets.QMenu()
             ip_control_menu.addAction("Grafik Aç",lambda:self.open_graph(address=address))
+            ip_control_menu.addAction("Beep",lambda :self.toggleBeep_by_address(address))
             ip_control_menu.addAction("Durdur",lambda:self.ip_stop(address=address, isToggle =True, isKill =False))
             ip_control_menu.addAction("Sil",lambda: self.deleteRowFromTable(address=address))
+            
             ip_control_menu.exec(self.tableTarget.mapToGlobal(event.pos()))
         if(event.type() == QtCore.QEvent.MouseButtonPress and
            event.buttons() == QtCore.Qt.LeftButton and
@@ -324,10 +352,8 @@ class MainWindow(QMainWindow):
             color = QColor(200, 255, 200) if last_result == "Success" else QColor(255, 200, 200)
 
             # 🔁 Hem hücreyi doldur, hem rengini ver
-            for col, key in enumerate(headers):
-                 if key == "rate":
-                    self.update_rate_cell(row, col, stat)
-                 else:
+            for col, key in enumerate(headers):                
+                 
                     value = summary.get(key, "")
                     item = QTableWidgetItem(str(value))
                     item.setBackground(color)

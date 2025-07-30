@@ -2,7 +2,10 @@ from typing import List, Optional
 from statistics import mean, stdev
 import matplotlib.pyplot as plt
 import pyqtgraph as pg
+from pyqtgraph import DateAxisItem
 import time
+
+from pyqtgraph import PlotDataItem,BarGraphItem
 dict_of_data_keys = {# buradaki keyler tablodaki sütun başlıkları için kullanılacak. Ekleyeceğiniz veri varsa burada başlığını girerseniz grafik güncellenir
             "target": "",
             "sent": "",
@@ -25,12 +28,13 @@ class PingStats:
     def __init__(self, target: str):
         self._target = target
         self._rttList: List[Optional[float]] = []
+        self._timeStamp_for_rttList: List[Optional[int]] = []
         self._rate: float = 0
         self.addTime: float
     
-    def add_result(self, rtt: Optional[float]):
+    def add_result(self, rtt: Optional[float], time:int = None):
         self._rttList.append(rtt)
-        self.addTime = time.time()
+        self._timeStamp_for_rttList.append(time)
     def update_rate(self, pulse:int):
         self.rate = 1/pulse
     @property
@@ -90,81 +94,13 @@ class PingStats:
             "rate": round(self.rate, 2) if self.rate is not None else None
         }
     
-    
+    def get_time_series_data(self):# zaman ve rtt'yi birleştirir    
+        return [
+            (t, r)
+            for t, r in zip(self._timeStamp_for_rttList, self._rttList)
+            if t is not None and r is not None
+        ]
 
-    #grafik metotları
-    def plot_rtt_series(self, ax=None):
-        valid_rttList = [r for r in self._rttList if r is not None]
-        if not valid_rttList:
-            print(f"[{self._target}] No RTT data for series plot.")
-            return
-
-        if ax is None:
-            plt.figure(figsize=(10, 4))
-            ax = plt.gca()
-
-        ax.plot(range(len(valid_rttList)), valid_rttList, marker='o')
-        ax.set_title("RTT Trend")
-        ax.set_xlabel("Ping Attempt")
-        ax.set_ylabel("RTT (ms)")
-        ax.grid(True)
-
-    def plot_rtt_box(self, ax=None):
-        valid_rttList = [r for r in self._rttList if r is not None]
-        if not valid_rttList:
-            print(f"[{self._target}] No RTT data for boxplot.")
-            return
-
-        if ax is None:
-            plt.figure(figsize=(6, 4))
-            ax = plt.gca()
-
-        ax.boxplot(valid_rttList, vert=True, patch_artist=True)
-        ax.set_title("RTT Distribution")
-        ax.set_ylabel("RTT (ms)")
-
-    def plot_success_ratio(self, ax=None):
-        if self.sent == 0:
-            print(f"[{self._target}] No pings sent.")
-            return
-
-        if ax is None:
-            plt.figure(figsize=(5, 5))
-            ax = plt.gca()
-
-        sizes = [self.received, self.failed]
-        labels = ['Success', 'Timeout']
-        ax.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140)
-        ax.set_title("Success Ratio")
-
-    def plot_jitter_bar(self, ax=None):
-        if ax is None:
-            plt.figure(figsize=(4, 4))
-            ax = plt.gca()
-
-        ax.bar(["Jitter"], [self.jitter], color="skyblue")
-        ax.set_title("Jitter")
-        ax.set_ylabel("Milliseconds")
-
-    # ✅ Hepsini tek bir sayfada çizmek için wrapper
-    def all_graph(self, show=True):
-        print(f"📊 Generating combined graph for: {self.target}")
-        valid_rttList = [r for r in self._rttList if r is not None]
-        if not valid_rttList:
-            print("No RTT data available.")
-            return
-
-        fig, axs = plt.subplots(2, 2, figsize=(12, 8))
-        fig.suptitle(f"Ping Statistics for {self._target}", fontsize=16)
-
-        self.plot_rtt_series(ax=axs[0, 0])
-        self.plot_rtt_box(ax=axs[0, 1])
-        self.plot_success_ratio(ax=axs[1, 0])
-        self.plot_jitter_bar(ax=axs[1, 1])
-
-        plt.tight_layout(rect=[0, 0, 1, 0.95])
-        if show:
-            plt.show()
 
     @staticmethod
     def show_all():
@@ -173,23 +109,45 @@ class PingStats:
     
     def pygraph(self):
         valid_rtt_list = [r for r in self._rttList if r is not None]# listeyi temizler none verilerden ayıklar
+        valid_timeList = [t for t in self._timeStamp_for_rttList if t is not None]
+        if not valid_timeList:
+            print(f"[{self._target}] No Time data")
+            return
         if not valid_rtt_list:
             print(f"[{self._target}] Geçerli RTT verisi yok.")
             return
-        pg.plot(valid_rtt_list, pen='g', symbol='o', title=f"RTT for {self._target}")
+        
+        pg.plot(valid_rtt_list, pen='g', symbol='o', title=f"RTT for {self._target}").setYRange(-1,300)
 
     def get_rtt_curve(self):
-        from pyqtgraph import PlotDataItem
-        y_data = [r if r is not None else -1 for r in self._rttList]
-        return PlotDataItem(y_data, pen='g', symbol='o', name="RTT Trend")
+        data = self.get_time_series_data()
+        
+        
+        if not data:
+            return PlotDataItem(x=0, y=0, pen='g', symbol='o', name="RTT Trend")
+
+        
+        x, y = zip(*data)
+        return PlotDataItem(x=x, y=y, pen='g', symbol='o', name="RTT Trend")
+    
     def get_jitter_bar(self):
-        from pyqtgraph import BarGraphItem
+        
         return BarGraphItem(x=[0], height=[self.jitter], width=0.6, brush='b')
-    def get_success_bar(self):
+    """def get_success_bar(self):
         from pyqtgraph import BarGraphItem
         success = self.received
         fail = self.failed
-        return BarGraphItem(x=[0, 1], height=[success, fail], width=0.6, brushes=['g', 'r'])
+        return BarGraphItem(x=[0, 1], height=[success, fail], width=0.6, brushes=['g', 'r'])"""
+    def get_success_bar(self):
+        from pyqtgraph import BarGraphItem
+        total = self.sent
+        if total == 0:
+            return BarGraphItem(x=[0, 1], height=[0, 0], width=0.6, brushes=['g', 'r'])
+
+        success_pct = self.received / total * 100
+        fail_pct = self.failed / total * 100
+
+        return BarGraphItem(x=[0, 1], height=[success_pct, fail_pct], width=0.6, brushes=['g', 'r'])
     def get_min_max_lines(self):
         from pyqtgraph import InfiniteLine
         lines = []

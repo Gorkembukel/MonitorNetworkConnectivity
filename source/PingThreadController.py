@@ -46,7 +46,8 @@ def filter_kwargs_for_PingThread(kwargs: dict) -> dict:
     return filtered
 
 class PingTask:
-    def __init__(self, stat_list:Dict,address: str, duration: int, interval_ms: int, isInfinite: bool, **kwargs ):
+    def __init__(self ,stat_list:Dict,address: str, duration: int, interval_ms: int, isInfinite: bool,isKill_Mod =False, **kwargs ):
+        self.isKill_Mod = isKill_Mod
         self.address = address
         self.duration = duration
         self.interval_ms = interval_ms
@@ -59,8 +60,8 @@ class PingTask:
 
         self.thread = None  # PingThread bu
 
-    def start(self):
-        self.thread = Behivior(address= self.address,duration= self.duration,interval_ms= self.interval_ms,stats= self.stats, isInfinite=self.isInfinite,**self.kwargs)
+    def start(self):#isKill_Mod=self.isKill_Mod behivor için
+        self.thread = PingThread(address= self.address,duration= self.duration,interval_ms= self.interval_ms,stats= self.stats, isInfinite=self.isInfinite,**self.kwargs)
         
         self.thread.start()
         
@@ -73,7 +74,8 @@ class PingTask:
 
     def summary(self):
         return self.stats.summary()
-
+    def toggleBeep(self):
+        self.thread.toggleBeep()# burada thread thead değil behivor adlı bi class olabilir
     def wait(self):
         if self.thread:
             self.thread.join()
@@ -98,7 +100,7 @@ class ScapyPinger:
         self.address_dict = {}#her ip key olup istenen çalışma parametreleri value olacak
         self.stats_list: Dict[str, PingStats] = {}# FIXME normalde liste burası
         
-    def add_task(self, address: str,isInfinite: bool, duration: int ,interval_ms: int, **kwargs  ):
+    def add_task(self, address: str,isInfinite: bool, duration: int ,interval_ms: int,isKill_Mod = False, **kwargs  ):
         if not is_valid_ip(address):
             print(f"🚫 Invalid address skipped: {address}")
             return False  
@@ -108,7 +110,7 @@ class ScapyPinger:
             print(f"⚠️ address already exists: {address}")
             return False
 
-        task = PingTask(address=address,stat_list= self.stats_list, duration=duration,interval_ms= interval_ms, isInfinite=isInfinite,**kwargs )
+        task = PingTask(address=address,stat_list= self.stats_list, duration=duration,interval_ms= interval_ms, isKill_Mod=isKill_Mod,isInfinite=isInfinite,**kwargs )
         self.tasks[address] = task
         return True
     def address_dict_to_add_task(self):
@@ -118,18 +120,20 @@ class ScapyPinger:
                 address=address,
                 duration=config['duration'],
                 interval_ms=config['interval_ms'],
+                isKill_Mod=config['isKill_Mod'],
                 isInfinite=config['isInfinite'],
                 **kwargs  # kwargs'ı geçir
             )
 
 
-    def add_addressList(self, addresses: list, interval_ms: int, duration: int, isInfinite: bool, **kwargs):
+    def add_addressList(self, addresses: list, interval_ms: int, duration: int, isInfinite: bool,isKill_Mod = False, **kwargs):
         filteredKwarg = filter_kwargs_for_PingThread(kwargs=kwargs)
         for address in addresses:
             self.address_dict[address] = {
                 'interval_ms': interval_ms,
                 'duration': duration,                
                 'isInfinite': isInfinite,
+                'isKill_Mod': isKill_Mod,
                 'kwargs': filteredKwarg  
             }
         self.address_dict_to_add_task()
@@ -166,7 +170,7 @@ class ScapyPinger:
         if address in self.stats_list:
             del self.stats_list[address]
             del self.tasks[address]
-        
+            del self.address_dict[address]
     def show_all_updated(self):        
         self.find_all_stats()          
     
@@ -182,4 +186,8 @@ class ScapyPinger:
     def stop_All(self):
         for task in self.tasks.values():  #  sadece value'larla ilgileniyoruz
             task.stop(isKill=True)
+
+    def toggleBeep_by_address(self, address:str):
+        task = self.get_task(address=address)
+        task.toggleBeep()
 

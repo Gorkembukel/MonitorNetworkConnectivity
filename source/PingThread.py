@@ -10,13 +10,18 @@ from icmplib import ping as icmp_ping
 import struct
 from icmplib.sockets import ICMPv4Socket
 from icmplib.models import ICMPRequest
-
+import os
 class Behivior():
-    criticle_threshHold_ms = 30# eğer interval bunun altında ise standart ping yetmez
-    def __init__(self, address, stats,duration,isInfinite =False ,end_datetime = None,count=1, interval_ms=1, timeout=2, id=None, source=None,
+    criticle_threshHold_ms = 1# eğer interval bunun altında ise standart ping yetmez
+
+    core_count = os.cpu_count()
+    max_core = core_count -1
+    def __init__(self,address, stats,duration,isKill_Mod=False,isInfinite =False ,end_datetime = None,count=1, interval_ms=1, timeout=2, id=None, source=None,
         family=None, privileged=True, **kwargs):
+        self.isKill_Mod = isKill_Mod
+
         self.interval_ms = interval_ms
-        params = {
+        self.params = {
         "address": address,
         "stats": stats,
         "duration": duration,
@@ -29,30 +34,38 @@ class Behivior():
         "source": source,
         "family": family,
         "privileged": privileged,
+        
         **kwargs  # kwargs ekle
         }
         
         
         self.context = self.decide_strategy()
         #self.thread = self.context.strategy.startPing(**params)  # ✅ doğrudan al
-        self.context.do_some_algorithm(**params)
-
+        self.context.do_some_algorithm(**self.params)
+    def update_parameters(self,**kwargs):
+        self.context.update_parameters(**kwargs)
 
        
 
     def decide_strategy(self) -> Context:
-        if Behivior.criticle_threshHold_ms < self.interval_ms:
+        if Behivior.criticle_threshHold_ms < self.interval_ms and not self.isKill_Mod:
             return Context(LowRatePing())
         
         else:
+            if self.isKill_Mod:
+                self.params["num_processes"]=Behivior.max_core
+                self.params["isKill_Mod"]=True   #HACK test için
+                
+            else:
+                self.params["num_processes"]= 1
             return Context(HighRatePing())
-        
         
     def takeComand():
         pass
     def optimizeBuffersize():
         pass
-
+    def getEnd_datetime(self):
+        return self.context.strategy.getEnd_datetime()
     # bir threadin yerine geçirdiğimiz için thread fonksiyonları tanımlıyoruz sistemin geri kalanında değişime gitmemek için
     def stop(self,**kwargs):
         self.context.strategy.stop(**kwargs)
@@ -61,8 +74,9 @@ class Behivior():
         return True
     def start(self):#
         pass
-
-
+    def toggleBeep(self):
+        if isinstance(self.context.strategy, LowRatePing):
+            self.context.strategy.toggleBeep()
 
 
 class PingThread(threading.Thread):
@@ -87,7 +101,7 @@ class PingThread(threading.Thread):
         self.family = family
         self.privileged = privileged
         self.kwargs = kwargs
-
+        self.isBeep = False
         self._pause_start_time = 0
         stats.setAddress(address)
         self.isKill=False #threadi komple kapatır
@@ -121,15 +135,20 @@ class PingThread(threading.Thread):
                     #rtt = result.avg_rtt
                     
                     rtt = result._rtts.pop()
-                    recv_time = time.time()
-                    self.stats.add_result(rtt)
                     
+                    self.stats.add_result(rtt, time.time() + 10800) #    istanbula göre UTC 3
+                    
+                    #ses için
+                    print(f"beepy dışı {self.isBeep}")
+                    if self.isBeep:
+                        print('\a')
                     print(f"[{self.address}] ✅ {rtt:.2f} ms (icmplib)")
                 else:
                     self.stats.add_result(None)
                     print(f"[{self.address}] ❌ Timeout (icmplib)")
+                recv_time = time.time()
                 reply_time = recv_time -send_time
-                sleep_time = self.interval_ms - reply_time# threadin tam olarak interval kadar uyuması için ping atma süresi kadar çıkartıyorum çünkü zaten o kadar zaman geçiyo             
+                sleep_time = self.interval_ms# threadin tam olarak interval kadar uyuması için ping atma süresi kadar çıkartıyorum çünkü zaten o kadar zaman geçiyo             
                 if sleep_time > 0:
                     time.sleep(sleep_time) 
                 endOf_while = time.time()
@@ -144,7 +163,7 @@ class PingThread(threading.Thread):
 
 
             time.sleep(2)#FIXME uzun time sleep
-
+        print("döngünün dışına")
     def getStats(self):
         return self.stats
     def setWhileCondition(self, isInfinite: bool):
@@ -180,5 +199,9 @@ class PingThread(threading.Thread):
             self.isInfinite = isInfinite
         if kwargs:
             self.kwargs.update(kwargs)
+    def toggleBeep(self):
+        if self.isBeep:
+            self.isBeep=False
+        else:self.isBeep=True
 
         print(f"[{self.address}] 🔁 Thread parametreleri güncellendi.")
