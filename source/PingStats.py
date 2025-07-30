@@ -94,13 +94,14 @@ class PingStats:
             "rate": round(self.rate, 2) if self.rate is not None else None
         }
     
-    def get_time_series_data(self):# zaman ve rtt'yi birleştirir    
+    def get_time_series_data(self):  # zaman ve rtt'yi birleştirir
+        valid_rtt_list = [r if r is not None else -200 for r in self._rttList]
+        valid_timeList = [t for t in self._timeStamp_for_rttList if t is not None]
         return [
             (t, r)
-            for t, r in zip(self._timeStamp_for_rttList, self._rttList)
+            for t, r in zip(self._timeStamp_for_rttList, valid_rtt_list)
             if t is not None and r is not None
         ]
-
 
     @staticmethod
     def show_all():
@@ -108,7 +109,7 @@ class PingStats:
         plt.show()
     
     def pygraph(self):
-        valid_rtt_list = [r for r in self._rttList if r is not None]# listeyi temizler none verilerden ayıklar
+        valid_rtt_list = [r if r is not None else -200 for r in self._rttList]
         valid_timeList = [t for t in self._timeStamp_for_rttList if t is not None]
         if not valid_timeList:
             print(f"[{self._target}] No Time data")
@@ -117,7 +118,7 @@ class PingStats:
             print(f"[{self._target}] Geçerli RTT verisi yok.")
             return
         
-        pg.plot(valid_rtt_list, pen='g', symbol='o', title=f"RTT for {self._target}").setYRange(-1,300)
+        pg.plot(valid_rtt_list, pen='g', symbol='o', title=f"RTT for {self._target}").setYRange(-200,300)
 
     def get_rtt_curve(self):
         data = self.get_time_series_data()

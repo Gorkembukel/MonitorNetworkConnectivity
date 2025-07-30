@@ -10,7 +10,7 @@ import threading
 import time
 import os
 import socket
-from playsound import playsound
+
 from icmplib.sockets import ICMPv4Socket
 from icmplib.models import ICMPRequest
 from icmplib.exceptions import ICMPSocketError, TimeoutExceeded, ICMPError

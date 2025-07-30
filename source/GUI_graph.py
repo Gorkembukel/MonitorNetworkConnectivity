@@ -89,12 +89,12 @@ class GraphWindow(QDialog):
         self.ui.tab_4.setLayout(layout4)
 
     def update_plots(self):
-        if 'rtt' in self.plot_refs:
-            if 'rtt' in self.plot_refs:
-                data = self.stat_obj.get_time_series_data()  # (timestamp, rtt) listesi
-                if data:
-                    x, y = zip(*data)
-                    self.plot_refs['rtt'].setData(x, y)
+        if 'rtt' in self.plot_refs:        
+            data = self.stat_obj.get_time_series_data()  # (timestamp, rtt) listesi
+            if data:
+                x, y = zip(*data)
+                
+                self.plot_refs['rtt'].setData(x, y)
         if 'jitter' in self.plot_refs:
             self.plot_refs['jitter'].setOpts(height=[self.stat_obj.jitter])
         if 'success' in self.plot_refs:
