@@ -97,7 +97,8 @@ class PingThread(threading.Thread):
         self.timeout = timeout
         self.id = id
         self.source = source
-        self.stop_time = time.time() + duration if duration else None
+        self.startTime = time.time()
+        self.stop_time = self.startTime + duration if duration else None
         self.family = family
         self.privileged = privileged
         self.kwargs = kwargs
@@ -186,7 +187,7 @@ class PingThread(threading.Thread):
             self.isKill = isKill
     def getEnd_datetime(self):
         return self.end_datetime
-    def update_parameters(self, interval_ms=None, end_datetime=None, timeout=None, count=None, isInfinite=None, **kwargs):
+    def update_parameters(self, interval_ms=None, duration = None,end_datetime=None, timeout=None, count=None, isInfinite=None, **kwargs):
         if interval_ms is not None:
             self.interval_ms = interval_ms / 1000
         if end_datetime is not None:
@@ -197,6 +198,16 @@ class PingThread(threading.Thread):
             self.count = count
         if isInfinite is not None:
             self.isInfinite = isInfinite
+        if duration is not None:
+            print(f"thread classı içindeki duration  {duration}")
+            if self.duration is not None:
+                self.duration = duration
+                self.startTime = time.time() 
+                self.stop_time = self.startTime + self.duration
+                self.isInfinite = False
+            else:
+                self.stop_time = time.time() + duration
+
         if kwargs:
             self.kwargs.update(kwargs)
     def toggleBeep(self):

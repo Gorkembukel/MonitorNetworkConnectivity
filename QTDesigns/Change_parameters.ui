@@ -156,7 +156,7 @@
          <bool>true</bool>
         </property>
         <property name="currentIndex">
-         <number>2</number>
+         <number>0</number>
         </property>
         <property name="documentMode">
          <bool>false</bool>
@@ -176,6 +176,13 @@
          </attribute>
          <layout class="QHBoxLayout" name="horizontalLayout_6">
           <item>
+           <widget class="QCheckBox" name="checkBox_infinite">
+            <property name="text">
+             <string>CheckBox</string>
+            </property>
+           </widget>
+          </item>
+          <item>
            <widget class="QLabel" name="label_4">
             <property name="text">
              <string>duration (second)</string>
@@ -191,7 +198,7 @@
          <attribute name="title">
           <string>End date</string>
          </attribute>
-         <widget class="QWidget" name="">
+         <widget class="QWidget" name="layoutWidget">
           <property name="geometry">
            <rect>
             <x>60</x>
@@ -213,23 +220,6 @@
            </item>
           </layout>
          </widget>
-        </widget>
-        <widget class="QWidget" name="tab_count">
-         <attribute name="title">
-          <string>packet count</string>
-         </attribute>
-         <layout class="QHBoxLayout" name="horizontalLayout_8">
-          <item>
-           <widget class="QLabel" name="label_6">
-            <property name="text">
-             <string>Packet Count</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QLineEdit" name="lineEdit_packetcount"/>
-          </item>
-         </layout>
         </widget>
        </widget>
       </item>
@@ -263,5 +253,22 @@
   </layout>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>checkBox_infinite</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>lineEdit_duration</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>74</x>
+     <y>196</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>283</x>
+     <y>196</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

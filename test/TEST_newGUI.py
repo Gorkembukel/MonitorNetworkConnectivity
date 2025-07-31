@@ -32,7 +32,8 @@ class ChangeParameterWindow(QDialog):
         self.ui = Ui_Dialog_changeParameter()
         self.ui.setupUi(self)
         self.task = task
-
+        self.isInfinite = task.isInfinite
+        self.ui.checkBox_infinite.setCheckState(self.isInfinite)
         now = datetime.now()
         #calender için ayar
         self.ui.dateTimeEdit.setCalendarPopup(True)
@@ -42,6 +43,7 @@ class ChangeParameterWindow(QDialog):
         self.ui.lineEdit_ip.setText(task.address)
         self.ui.lineEdit_interval.setText(str(task.interval_ms))
         self.ui.lineEdit_payloadsize.setText(str(task.kwargs['payload_size']))
+        
         self.dissableTabsExcept()
 
         self.ui.pushButton_settChages.clicked.connect(self.applyChange)
@@ -54,7 +56,7 @@ class ChangeParameterWindow(QDialog):
 
         for i in range(tabCount):        
             self.ui.tabWidget.setTabEnabled(i, False)# bütün tabları kapatır
-        if self.task.duration and self.task.duration !=0:
+        if ( self.task.duration or self.isInfinite) and (self.task.duration !=0 or self.isInfinite) :
             self.ui.tabWidget.setTabEnabled(0, True)# duration değeri varsa o tabi açar
             self.ui.lineEdit_duration.setText(str(self.task.duration))
             self.ui.tabWidget.setCurrentIndex(0)
@@ -73,13 +75,16 @@ class ChangeParameterWindow(QDialog):
             payload_text = self.ui.lineEdit_payloadsize.text().strip()
             if payload_text:
                 self.task.kwargs["payload_size"] = int(payload_text)
-
+            #isInfinite
+            isInfinite = self.ui.checkBox_infinite.isChecked()
+            if isInfinite:
+                self.task.isInfinite= isInfinite
             # Duration tabı aktifse → duration güncellenir
             if self.ui.tabWidget.isTabEnabled(0) and self.ui.lineEdit_duration.isEnabled():
                 duration_text = self.ui.lineEdit_duration.text().strip()
                 if duration_text:
-                    self.task.duration = int(duration_text)
-
+                    self.task.duration= int(duration_text)
+                    self.task.isInfinite = False
             # End datetime tabı aktifse → end_datetime güncellenir
             if self.ui.tabWidget.isTabEnabled(1) and self.ui.dateTimeEdit.isEnabled():
                 dt = self.ui.dateTimeEdit.dateTime().toPyDateTime()

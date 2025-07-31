@@ -90,6 +90,7 @@ class PingTask:
                 interval_ms=self.interval_ms,
                 end_datetime=self.kwargs.get("end_datetime", None),
                 isInfinite=self.isInfinite,
+                duration=self.duration,
                 **self.kwargs
             )
 
