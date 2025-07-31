@@ -39,34 +39,52 @@ class PingStats:
         self.rate = 1/pulse
     @property
     def target(self): return self._target
+    @property 
+    def filterted_rtt(self): return [r if r is not None and r < 300 else None for r in self._rttList]
     @property
-    def sent(self): return len(self._rttList)
+    def valid_rtt(self):
+        """Gerçek RTT değerleri: 0 veya daha büyük"""
+        return [r for r in self._rttList if r is not None and r <300]
+
     @property
-    def received(self): return len([r for r in self._rttList if r is not None])
+    def failed_count(self):
+        """300 olanları sayar (timeout'lar)"""
+        return len([r for r in self._rttList if r == 300])
     @property
-    def failed(self): return self.sent - self.received
+    def sent(self):
+        return len(self._rttList)
+
     @property
-    def success_rate(self): return (self.received / self.sent * 100) if self.sent else 0.0
+    def received(self):
+        return len(self.valid_rtt)
+
+    @property
+    def failed(self):
+        return self.sent - self.received  # ya da: self.failed_count
+
+    @property
+    def success_rate(self):
+        return (self.received / self.sent * 100) if self.sent else 0.0
     @property
     def average_rtt(self): 
-        valid = [r for r in self._rttList if r is not None]
+        valid = [r for r in self.filterted_rtt if r is not None]
         return round(mean(valid), 2) if valid else None
     @property
     def min_rtt(self): 
-        valid = [r for r in self._rttList if r is not None]
+        valid = [r for r in self.filterted_rtt if r is not None]
         return min(valid) if valid else None
     @property
     def max_rtt(self): 
-        valid = [r for r in self._rttList if r is not None]
+        valid = [r for r in self.filterted_rtt if r is not None]
         return max(valid) if valid else None
     @property
     def jitter(self): 
-        valid = [r for r in self._rttList if r is not None]
-        return round(stdev(valid), 2) if len(valid) > 1 else 0.0
+        valid = [r for r in self.filterted_rtt if r is not None]
+        return round(stdev(valid), 6) if len(valid) > 1 else 0.0
     @property
     def last_result(self): 
         if not self._rttList: return "No Data"
-        return "Success" if self._rttList[-1] is not None else "Timeout"
+        return "Success" if self._rttList[-1] is not None and self._rttList[-1] < 300 else "Timeout"#return "Success" if self._rttList[-1] is not None else "Timeout"
     @property
     def rate(self):
         return self._rate
@@ -85,11 +103,11 @@ class PingStats:
             "sent": self.sent,
             "received": self.received,
             "failed": self.failed,
-            "success_rate": round(self.success_rate, 2),
+            "success_rate": round(self.success_rate, 6),
             "avg_rtt": self.average_rtt,
-            "min_rtt": round(self.min_rtt, 2) if self.min_rtt is not None else None,
-            "max_rtt": round(self.max_rtt, 2) if self.max_rtt is not None else None,
-            "jitter": round(self.jitter, 2) if self.jitter is not None else None,
+            "min_rtt": round(self.min_rtt, 6) if self.min_rtt is not None else None,
+            "max_rtt": round(self.max_rtt, 6) if self.max_rtt is not None else None,
+            "jitter": round(self.jitter, 6) if self.jitter is not None else None,
             "last_result": self.last_result,
             "rate": round(self.rate, 2) if self.rate is not None else None
         }
@@ -99,7 +117,7 @@ class PingStats:
         valid_timeList = [t for t in self._timeStamp_for_rttList if t is not None]
         return [
             (t, r)
-            for t, r in zip(self._timeStamp_for_rttList, valid_rtt_list)
+            for t, r in zip(self._timeStamp_for_rttList, self._rttList)
             if t is not None and r is not None
         ]
 
@@ -109,16 +127,16 @@ class PingStats:
         plt.show()
     
     def pygraph(self):
-        valid_rtt_list = [r if r is not None else -200 for r in self._rttList]
+        #valid_rtt_list = [r if r is not None else -200 for r in self._rttList]
         valid_timeList = [t for t in self._timeStamp_for_rttList if t is not None]
         if not valid_timeList:
             print(f"[{self._target}] No Time data")
             return
-        if not valid_rtt_list:
+        """if not valid_rtt_list:
             print(f"[{self._target}] Geçerli RTT verisi yok.")
-            return
+            return"""
         
-        pg.plot(valid_rtt_list, pen='g', symbol='o', title=f"RTT for {self._target}").setYRange(-200,300)
+        pg.plot(self._rttList, pen='g', symbol='o', title=f"RTT for {self._target}").setYRange(-220,300)
 
     def get_rtt_curve(self):
         data = self.get_time_series_data()

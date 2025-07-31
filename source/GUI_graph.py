@@ -12,7 +12,7 @@ class GraphWindow(QDialog):
         plot = PlotWidget()
         plot.setFixedHeight(30)
         plot.setYRange(0, 1.5)
-        plot.setMouseEnabled(x=False, y=False)
+        plot.setMouseEnabled(x=True, y=True)
         plot.hideAxis('left')
         plot.hideAxis('bottom')
 

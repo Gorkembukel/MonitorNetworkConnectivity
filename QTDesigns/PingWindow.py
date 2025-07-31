@@ -67,7 +67,7 @@ class Ui_pingWindow(object):
         self.checkBox_KillMod.setObjectName("checkBox_KillMod")
         self.formLayout.setWidget(3, QtWidgets.QFormLayout.FieldRole, self.checkBox_KillMod)
         self.spinBox_interval = QtWidgets.QSpinBox(self.formLayoutWidget)
-        self.spinBox_interval.setMinimum(50)
+        self.spinBox_interval.setMinimum(500)
         self.spinBox_interval.setMaximum(99999)
         self.spinBox_interval.setObjectName("spinBox_interval")
         self.formLayout.setWidget(10, QtWidgets.QFormLayout.LabelRole, self.spinBox_interval)

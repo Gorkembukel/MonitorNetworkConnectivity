@@ -14,7 +14,7 @@ from source.PingThreadController import ScapyPinger
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from source.GUI_graph import GraphWindow
-
+import subprocess, os
 scapyPinger_global = ScapyPinger()
 stats_list_global = scapyPinger_global.find_all_stats()
 headers = List
@@ -95,6 +95,7 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
     pingTargetsReady = pyqtSignal()#
     def __init__(self, parent= None):
         super().__init__(parent)
+        
         self.ui = Ui_pingWindow()
         self.original_color = self.palette().color(QPalette.Window)
         self.parent = parent
@@ -138,12 +139,17 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
 
     def changeDurationLabel(self,toggled):
         self.ui.label_duration.setDisabled(toggled)
+    
 
+    
+
+    
     def extract_addresses(self):
         global headers 
         global scapyPinger_global
         global stats_list_global
         headers = list(get_data_keys())
+        
         kwargs = {}#scapypinger için argümanlar.Eklemek istediğiniz armünanları pingthreadController içindeki filtre metoduna tanıtmalısınız 
                    #PingThreadController ->PingThread ->icmplib ping ->ICMPRequest
         text = ""
@@ -151,7 +157,10 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
         text = self.ui.plainTextEdit.toPlainText()
         # 2️⃣ Satırları ayır ve boş olmayanları döndür
         addresses = [line.strip() for line in text.splitlines() if line.strip()]
-
+        if addresses and addresses[0].startswith("**"):
+            print("İlk satır '**' ile başlıyor.")
+            self.ui.checkBox_KillMod.setVisible(True)
+            
         self.data.targets = addresses#TODO deepcopy gerekebilir mi?
 
          # 2️⃣ SpinBox'lardan parametreleri al
@@ -216,6 +225,7 @@ class MainWindow(QMainWindow):
     def open_graph(self,address):
         task = scapyPinger_global.get_task(address=address)
         statObject = task.stats
+        print(statObject._rttList)
         self.graphWindow = GraphWindow(stat_obj=statObject,parent=self)
         self.graphWindow.setWindowFlags(Qt.Window | Qt.WindowMinMaxButtonsHint | Qt.WindowCloseButtonHint)
         self.graphWindow.show()
@@ -405,6 +415,7 @@ class MainWindow(QMainWindow):
     def open_pingWindow(self):
         self.pingWindow = PingWindow(self)
         self.pingWindow.pingTargetsReady.connect(self.update_Stats)
+        
         self.pingWindow.show()
     def on_row_clicked(self, row, column):
         print("mahmut")

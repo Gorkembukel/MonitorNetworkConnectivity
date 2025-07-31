@@ -144,7 +144,7 @@ class PingThread(threading.Thread):
                         print('\a')
                     print(f"[{self.address}] ✅ {rtt:.2f} ms (icmplib)")
                 else:
-                    self.stats.add_result(None)
+                    self.stats.add_result(300, time.time() + 10800)
                     print(f"[{self.address}] ❌ Timeout (icmplib)")
                 recv_time = time.time()
                 reply_time = recv_time -send_time
