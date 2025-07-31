@@ -17,18 +17,31 @@
    <widget class="QWidget" name="widget" native="true">
     <property name="geometry">
      <rect>
-      <x>509</x>
-      <y>-1</y>
+      <x>610</x>
+      <y>-10</y>
       <width>291</width>
       <height>581</height>
      </rect>
+    </property>
+   </widget>
+   <widget class="QSplitter" name="splitter">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>0</y>
+      <width>0</width>
+      <height>0</height>
+     </rect>
+    </property>
+    <property name="orientation">
+     <enum>Qt::Horizontal</enum>
     </property>
    </widget>
    <widget class="QWidget" name="verticalLayoutWidget">
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>60</y>
+      <y>70</y>
       <width>183</width>
       <height>111</height>
      </rect>
@@ -67,19 +80,6 @@
      </item>
     </layout>
    </widget>
-   <widget class="QSplitter" name="splitter">
-    <property name="geometry">
-     <rect>
-      <x>0</x>
-      <y>0</y>
-      <width>0</width>
-      <height>0</height>
-     </rect>
-    </property>
-    <property name="orientation">
-     <enum>Qt::Horizontal</enum>
-    </property>
-   </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
    <property name="geometry">
@@ -90,6 +90,13 @@
      <height>22</height>
     </rect>
    </property>
+   <widget class="QMenu" name="menuIperf">
+    <property name="title">
+     <string>Iperf</string>
+    </property>
+    <addaction name="actionOpen_Iperf"/>
+   </widget>
+   <addaction name="menuIperf"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="dockWidget">
@@ -188,6 +195,14 @@
     </layout>
    </widget>
   </widget>
+  <action name="actionOpen_Iperf">
+   <property name="text">
+    <string>Open Iperf</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+F</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

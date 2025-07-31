@@ -127,26 +127,30 @@ class PingThread(threading.Thread):
         while not self.isKill:#TODO bu while hep dönecek, kill komutu gelene kadar threadi uykuda tutacak
             while self._should_continue() and not self._stop_event.is_set():#TODO burada sürekli metot çağırılıyor performans için değiştirilebilir
                 # icmplib yöntemi
-                
-                send_time = time.time()
-                print(f"[{self.address}] ➡️ icmp_ping kwargs: {self.kwargs}")
-                result = icmp_ping(address=self.address, count=self.count,interval=self.interval_ms, timeout=self.timeout, id=self.id, source=self.source,
-        family=self.family, privileged=self.privileged, **self.kwargs)
-                if result.is_alive:
-                    #rtt = result.avg_rtt
+                try:
+                    send_time = time.time()
+                    print(f"[{self.address}] ➡️ icmp_ping kwargs: {self.kwargs}")
+                    result = icmp_ping(address=self.address, count=self.count,interval=self.interval_ms, timeout=self.timeout, id=self.id, source=self.source,
+            family=self.family, privileged=self.privileged, **self.kwargs)
+                    if result.is_alive:
+                        #rtt = result.avg_rtt
+                        
+                        rtt = result._rtts.pop()
+                        
+                        self.stats.add_result(rtt, time.time() + 10800) #    istanbula göre UTC 3
+                        
+                        #ses için
+                        print(f"beepy dışı {self.isBeep}")
+                        if self.isBeep:
+                            print('\a')
+                        print(f"[{self.address}] ✅ {rtt:.2f} ms (icmplib)")
+                    else:
+                        self.stats.add_result(300, time.time() + 10800)
+                        print(f"[{self.address}] ❌ Timeout (icmplib)")
                     
-                    rtt = result._rtts.pop()
-                    
-                    self.stats.add_result(rtt, time.time() + 10800) #    istanbula göre UTC 3
-                    
-                    #ses için
-                    print(f"beepy dışı {self.isBeep}")
-                    if self.isBeep:
-                        print('\a')
-                    print(f"[{self.address}] ✅ {rtt:.2f} ms (icmplib)")
-                else:
+                except Exception as e:
+                    print(f"[{self.address}] ⚠️ ICMP ping exception: {e}")
                     self.stats.add_result(300, time.time() + 10800)
-                    print(f"[{self.address}] ❌ Timeout (icmplib)")
                 recv_time = time.time()
                 reply_time = recv_time -send_time
                 sleep_time = self.interval_ms# threadin tam olarak interval kadar uyuması için ping atma süresi kadar çıkartıyorum çünkü zaten o kadar zaman geçiyo             

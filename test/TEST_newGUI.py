@@ -15,6 +15,7 @@ from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from source.GUI_graph import GraphWindow
 import subprocess, os
+from source.GUI.iperf_window import IperfWindow
 scapyPinger_global = ScapyPinger()
 stats_list_global = scapyPinger_global.find_all_stats()
 headers = List
@@ -32,6 +33,7 @@ class ChangeParameterWindow(QDialog):
         self.ui = Ui_Dialog_changeParameter()
         self.ui.setupUi(self)
         self.task = task
+        self.setWindowTitle(task.address)
         self.isInfinite = task.isInfinite
         self.ui.checkBox_infinite.setCheckState(self.isInfinite)
         now = datetime.now()
@@ -216,6 +218,8 @@ class MainWindow(QMainWindow):
         self.buttonPingBaslat.clicked.connect(self.set_scapyPinger)
         self.ui.pushButton_pingDurdur.setEnabled(False)
 
+        self.ui.actionOpen_Iperf.triggered.connect(self.open_iperf)
+
         self.tableTarget.viewport().installEventFilter(self)
         self.tableTarget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.ui.tableTarget.cellDoubleClicked.connect(self.on_row_clicked)
@@ -223,10 +227,12 @@ class MainWindow(QMainWindow):
 
         self.ui.pushButton_pingDurdur.clicked.connect(self.stopAllThreads)
         self.stats_timer = QTimer(self)
-        self.stats_timer.setInterval(17)  # 1000ms = 1 saniye#60fps için girilen değr
+        self.stats_timer.setInterval(1000)  # 1000ms = 1 saniye#60fps için girilen değr
         self.stats_timer.timeout.connect(self.update_Stats)
         self.stats_timer.start()
-
+    def open_iperf(self):
+        self.iperf_window = IperfWindow()
+        self.iperf_window.show()
     def open_graph(self,address):
         task = scapyPinger_global.get_task(address=address)
         statObject = task.stats
@@ -440,6 +446,7 @@ class MainWindow(QMainWindow):
     def open_changeSettingsWindow(self, task:PingTask):
         if task:
             self.changeSetting = ChangeParameterWindow(task=task)
+            
             self.changeSetting.show()
     
     def add_pings(self):
