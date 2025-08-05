@@ -14,16 +14,6 @@
    <string>Monitor Network Connectivity</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QWidget" name="widget" native="true">
-    <property name="geometry">
-     <rect>
-      <x>610</x>
-      <y>-10</y>
-      <width>291</width>
-      <height>581</height>
-     </rect>
-    </property>
-   </widget>
    <widget class="QSplitter" name="splitter">
     <property name="geometry">
      <rect>

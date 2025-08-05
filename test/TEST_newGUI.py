@@ -311,52 +311,14 @@ class MainWindow(QMainWindow):
 
     def ip_control_interface(self,pos):
         self.ip_control_menu.exec(self.tableTarget.mapToGlobal(pos))
-    def update_rate_cell(self, row: int, col: int, stat):
-        
-
-        target = stat.target
-
-        if not hasattr(self, 'target_to_graph'):
-            self.target_to_graph = {}
-
-        if target in self.target_to_graph:
-            graph = self.target_to_graph[target]
-
-            # C++ nesnesi silinmiş mi?
-            if graph["curve"] is None or not hasattr(graph["curve"], "setData"):
-                return
-
-            now = time.time()
-            rate_val = stat.rate or 0.1
-            beat = min(1.0, rate_val / 10.0)
-
-            graph["x"].pop(0)
-            graph["x"].append(now)
-
-            graph["y"].pop(0)
-            graph["y"].append(beat)
-
-            try:
-                graph["curve"].setData(graph["x"], graph["y"])
-            except RuntimeError:
-                print(f"[{target}] Curve silinmiş, güncellenemiyor.")
-                return
-        else:
-            container, curve, x, y = GraphWindow.create_rate_widget()
-            self.ui.tableTarget.setCellWidget(row, col, container)
-            self.target_to_graph[target] = {
-                "curve": curve,
-                "x": x,
-                "y": y
-            }
+    
 
     def update_Stats(self):
         global stats_list_global
         global headers
         self.tableTarget.clearContents()#silinmiş pingStat objelerinin verilerini tablodan kaldırır
         self.tableTarget.clearContents()
-        if hasattr(self, 'target_to_graph'):
-            self.target_to_graph.clear()
+        
         for stat in stats_list_global.values():# FIXME burada stat_list liste ise patlar
             summary = stat.summary()
             target = summary["target"]
@@ -390,23 +352,7 @@ class MainWindow(QMainWindow):
 
     def stopAllThreads(self):
         scapyPinger_global.stop_All()
-    def update_table(self, stats_list):
-        headers = list(get_data_keys())
-        for stat in stats_list:
-            summary = stat.summary()
-            target = summary["target"]
-
-            if target in self.target_to_row:
-                row = self.target_to_row[target]
-            else:
-                row = self.ui.tableTarget.rowCount()
-                self.ui.tableTarget.insertRow(row)
-                self.target_to_row[target] = row
-
-            for col, key in enumerate(headers):
-                value = summary.get(key, "")
-                item = QTableWidgetItem(str(value))
-                self.ui.tableTarget.setItem(row, col, item)
+    
 
 
 
@@ -465,4 +411,4 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     window = MainWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
