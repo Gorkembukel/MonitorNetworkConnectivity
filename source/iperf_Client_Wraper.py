@@ -6,7 +6,7 @@ from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5        import QtCore
 
 from source.threads_for_iperf import Client_Runner
-
+from source.subproces_for_iperf import Client_subproces
 
 
 parameter_for_table_headers= {  "_server_hostname": "",# buradan tablo headerları oluşturulacak
@@ -93,8 +93,8 @@ class Client_Wrapper(Client):
 
         # None olanları filtrele
         kwargs = {k: v for k, v in raw.items() if v is not None}
-        return Client_Runner(iperWindow=iperWindow, **kwargs)
-
+        #return Client_Runner(iperWindow=iperWindow, **kwargs)
+        return Client_subproces(iperWindow=iperWindow, **kwargs)
 if __name__== "__main__":
     #classı test etmek için pencere oluşturmayı düşünüyorum
     pass
