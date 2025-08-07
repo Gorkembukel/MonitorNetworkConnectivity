@@ -4,8 +4,8 @@ from scapy.all import ICMP, IP, sr1
 import time
 import ipaddress
 import socket
-from source.PingThread import PingThread, Behivior
-from source.PingStats import PingStats
+from source.ping.PingThread import PingThread, Behivior
+from source.ping.PingStats import PingStats
 from typing import Dict, List
 
 def is_valid_ip(ip_str: str) -> bool:

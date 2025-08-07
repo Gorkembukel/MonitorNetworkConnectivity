@@ -3,7 +3,7 @@ import threading
 import multiprocessing
 from multiprocessing import Process, Queue
 
-from source.iperf_TestResult_Wrapper import TestResult_Wrapper
+from source.Iperf.iperf_TestResult_Wrapper import TestResult_Wrapper
 
 valid_fields = {
             "server_hostname",

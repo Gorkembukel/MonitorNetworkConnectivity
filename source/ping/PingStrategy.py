@@ -15,7 +15,7 @@ from icmplib.sockets import ICMPv4Socket
 from icmplib.models import ICMPRequest
 from icmplib.exceptions import ICMPSocketError, TimeoutExceeded, ICMPError
 import multiprocessing
-from source.PingStats import PingStats
+from source.ping.PingStats import PingStats
 # Bu dosyanın  bulunduğu dizini al
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 

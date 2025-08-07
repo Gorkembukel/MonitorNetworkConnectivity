@@ -4,8 +4,8 @@ import threading
 import time
 
 
-from source.PingStrategy import  Context,LowRatePing, HighRatePing
-from source.PingStats import PingStats
+from source.ping.PingStrategy import  Context,LowRatePing, HighRatePing
+from source.ping.PingStats import PingStats
 from icmplib import ping as icmp_ping
 import struct
 from icmplib.sockets import ICMPv4Socket

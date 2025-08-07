@@ -5,8 +5,8 @@ import PyQt5
 from PyQt5.QtCore import pyqtSignal, pyqtSlot
 from PyQt5        import QtCore
 
-from source.threads_for_iperf import Client_Runner
-from source.subproces_for_iperf import Client_subproces
+from source.Iperf.threads_for_iperf import Client_Runner
+from source.Iperf.subproces_for_iperf import Client_subproces
 
 
 parameter_for_table_headers= {  "_server_hostname": "",# buradan tablo headerları oluşturulacak

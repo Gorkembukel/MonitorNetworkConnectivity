@@ -5,7 +5,7 @@ import pyqtgraph as pg
 import re
 from QTDesigns.iperf_result import Ui_MainWindow
 
-from source.iperf_TestResult_Wrapper import TestResult_Wrapper_sub
+from source.Iperf.iperf_TestResult_Wrapper import TestResult_Wrapper_sub
 
 
 class GraphWindow_iperf(QMainWindow):

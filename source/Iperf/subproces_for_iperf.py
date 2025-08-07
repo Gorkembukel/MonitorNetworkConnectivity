@@ -1,7 +1,7 @@
 
 import subprocess
 
-from source.iperf_TestResult_Wrapper import TestResult_Wrapper_sub
+from source.Iperf.iperf_TestResult_Wrapper import TestResult_Wrapper_sub
 from iperf3 import Client
 
 valid_fields = {

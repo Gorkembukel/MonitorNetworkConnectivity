@@ -11,15 +11,15 @@ from PyQt5.QtWidgets import QDialog,QApplication,QMainWindow,QTableWidgetItem
 import sys
 from typing import Dict
 
-import source.iperf_Client_Wraper
-from source.iperf_Client_Wraper import Client_Wrapper
-from source.threads_for_iperf import Client_Runner,Client_Proces
-from source.iperf_TestResult_Wrapper import TestResult_Wrapper, TestResult_Wrapper_sub
-from source.GUI.GUI_graph_iperf import GraphWindow_iperf
-from iperf3 import TestResult
+import  source.Iperf.iperf_Client_Wraper
+from    source.Iperf.iperf_Client_Wraper import Client_Wrapper
+from    source.Iperf.threads_for_iperf import Client_Runner,Client_Proces
+from    source.Iperf.iperf_TestResult_Wrapper import TestResult_Wrapper, TestResult_Wrapper_sub
+from    source.GUI.GUI_graph_iperf import GraphWindow_iperf
+from    iperf3 import TestResult
 
-table_headers = source.iperf_Client_Wraper.table_headers
-param_client = source.iperf_Client_Wraper.parameter_for_table_headers
+table_headers = source.Iperf.iperf_Client_Wraper.table_headers
+param_client = source.Iperf.iperf_Client_Wraper.parameter_for_table_headers
 
 
 @dataclass

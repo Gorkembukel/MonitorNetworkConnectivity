@@ -8,12 +8,12 @@ from PyQt5.QtGui import QColor,QPalette
 from QTDesigns.MainWindow import Ui_MonitorNetWorkConnectivity
 from QTDesigns.PingWindow import Ui_pingWindow
 from QTDesigns.Change_parameters import Ui_Dialog_changeParameter
-from source.PingStats import get_data_keys
-from source.PingThreadController import PingTask
-from source.PingThreadController import ScapyPinger
+from source.ping.PingStats import get_data_keys
+from source.ping.PingThreadController import PingTask
+from source.ping.PingThreadController import ScapyPinger
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
-from source.GUI_graph import GraphWindow
+from source.ping.GUI_graph import GraphWindow
 import subprocess, os
 from source.GUI.iperf_window import IperfWindow
 scapyPinger_global = ScapyPinger()
