@@ -18,6 +18,7 @@ parameter_for_table_headers= {  "_server_hostname": "",# buradan tablo headerlar
                                 "_duration": "",
                                 "_bandwidth": "",
                                 "_protocol": ""
+                                
 }
 def beautify_key(key):
     # Başındaki "_" işaretini kaldır, alt çizgileri boşluk yap, kelimelerin ilk harfini büyük yap
@@ -77,7 +78,7 @@ class Client_Wrapper(Client):
     @pyqtSlot()
     def build_client_kwargs(
     _server_hostname=None, _port=None, _num_streams=None, _zerocopy=False,
-    _omit=None, _duration=None, _bandwidth=None, _protocol=None, _blksize=None, iperWindow =None
+    _omit=None, _duration=None, _bandwidth=None, _protocol=None, _blksize=None, iperWindow =None, _reversed = None
     ):
         raw = {
             "server_hostname": _server_hostname,
@@ -89,6 +90,7 @@ class Client_Wrapper(Client):
             "bandwidth": int(_bandwidth) if _bandwidth else None,
             "protocol": _protocol,
             "blksize": int(_blksize) if _blksize else None,
+            "reversed": _reversed
         }
 
         # None olanları filtrele

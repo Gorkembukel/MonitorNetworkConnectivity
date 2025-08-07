@@ -221,6 +221,13 @@
               </property>
              </widget>
             </item>
+            <item row="10" column="0">
+             <widget class="QCheckBox" name="checkBox_reversed">
+              <property name="text">
+               <string>Reversed</string>
+              </property>
+             </widget>
+            </item>
            </layout>
           </widget>
           <widget class="QWidget" name="tab_Server">

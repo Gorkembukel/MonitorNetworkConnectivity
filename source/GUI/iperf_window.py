@@ -15,7 +15,7 @@ import source.iperf_Client_Wraper
 from source.iperf_Client_Wraper import Client_Wrapper
 from source.threads_for_iperf import Client_Runner,Client_Proces
 from source.iperf_TestResult_Wrapper import TestResult_Wrapper, TestResult_Wrapper_sub
-
+from source.GUI.GUI_graph_iperf import GraphWindow_iperf
 from iperf3 import TestResult
 
 table_headers = source.iperf_Client_Wraper.table_headers
@@ -91,12 +91,26 @@ class IperfWindow(QMainWindow):  # Yeni pencere Ping atmak için parametre alır
             
             #Qmenu, ip_control_interface için action menusu
             iperf_client_control = QtWidgets.QMenu()
-            iperf_client_control.addAction("Iperf başlat",lambda:self.start_iperf(hostName))          
-                      
+            iperf_client_control.addAction("Iperf başlat",lambda:self.start_iperf(hostName))
+            iperf_client_control.addAction("Grafik ",lambda:self.open_graph(hostName))          
+            iperf_client_control.addAction("Sil ",lambda:self.delete_client(hostName))          
             iperf_client_control.exec(self.ui.tableWidget_clients.mapToGlobal(event.pos()))
         
         return super(IperfWindow, self).eventFilter(source, event)
     
+    def delete_client(self,hostName):        
+        if hostName in self._client_threads:
+            
+            del self._client_threads[hostName]
+            self.update_table()  # tabloyu da hemen güncelle
+        else:
+            print(f"🚫 Silinemedi: {hostName} bulunamadı")
+
+    def open_graph(self,hostName):        
+        self.client_info = self.find_client(hostName)
+        self.window = GraphWindow_iperf(self.client_info.result,self)
+        self.window.setWindowFlags(Qt.Window | Qt.WindowMinMaxButtonsHint | Qt.WindowCloseButtonHint)
+        self.window.show()
     
     def add_client_to_threads(self, client_subproces: Client_Proces, hostName: str) -> bool:
         if hostName not in self._client_threads:
@@ -124,6 +138,7 @@ class IperfWindow(QMainWindow):  # Yeni pencere Ping atmak için parametre alır
         self.port            = self.ui.lineEdit_port.text() or None
         self.num_streams     = self.ui.lineEdit_numstreams.text() or None
         self.zerocopy        = self.ui.checkBox_zerocopy.isChecked()
+        self.reversed        = self.ui.checkBox_reversed.isChecked()
         self.omit            = self.ui.lineEdit_omit.text() or None
         self.duration        = self.ui.lineEdit_duration.text() or None
         self.bandwidth       = self.ui.lineEdit_bandwidth.text() or None
@@ -139,6 +154,7 @@ class IperfWindow(QMainWindow):  # Yeni pencere Ping atmak için parametre alır
             _duration=self.duration,
             _bandwidth=self.bandwidth,
             _protocol=self.protocol,
+            _reversed= self.reversed,
             iperWindow=self)
         #client.worker.testresultWrapper.update_table_for_result_signal.connect(self.update_result_table)
         self.add_client_to_threads(hostName=self.server_hostname,client_subproces=client_runner)
@@ -172,8 +188,12 @@ class IperfWindow(QMainWindow):  # Yeni pencere Ping atmak için parametre alır
                     value = ""
                 item = QTableWidgetItem(str(value))
                 self.ui.tableWidget_clients.setItem(row_index, col_index,item)
-        
-
+                #debug için
+        """for address, client_info in self._client_threads.items():
+            if client_info.result is not None:
+                print(f"{address} -> result: {client_info.result.print_all_stream()}")
+            else:
+                print(f"{address} -> result bilgisi yok")"""
 
 def main():
     app = QApplication(sys.argv)

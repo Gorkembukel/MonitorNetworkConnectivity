@@ -15,6 +15,7 @@ valid_fields = {
             "protocol",
             "blksize",
             "bind_address",
+            "reversed"
         }
 class Client_subproces():
     def __init__(self, iperWindow=None, **clientKwargs):
@@ -57,7 +58,13 @@ class Client_subproces():
         if self.clientKwargs.get("blksize"):
             cmd += ["-l", str(self.clientKwargs["blksize"])]
 
+        if self.clientKwargs.get("reversed"):
+            if self.clientKwargs["reversed"]:
+                cmd += ["-R"]
+       
+
         # Force flush output
+        cmd += ["-V"]# detailed info
         cmd += ["--forceflush"]
 
         # Komutu yazdırmak istersen (debug için)
@@ -66,3 +73,5 @@ class Client_subproces():
         # subprocess başlat
         self.testresultWrapper.set_subproces(subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True))
         return self
+    def _del__(self):
+        print(f"🗑 Siliniyor: {self.clientKwargs.get('server_hostname')}")

@@ -4,34 +4,9 @@ import pyqtgraph as pg
 from QTDesigns.graph_window import Ui_Dialog_graphWindow
 import time
 from pyqtgraph import DateAxisItem  
+
+
 class GraphWindow(QDialog):
-    @staticmethod
-    def create_rate_widget():
-        
-
-        plot = PlotWidget()
-        plot.setFixedHeight(30)
-        plot.setYRange(0, 1.5)
-        plot.setMouseEnabled(x=True, y=True)
-        plot.hideAxis('left')
-        plot.hideAxis('bottom')
-
-        layout = QVBoxLayout()
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.addWidget(plot)
-
-        container = QWidget()
-        container.setLayout(layout)
-
-        # Zaman ve rate verileri
-        now = time.time()
-        x_data = [now - i for i in reversed(range(20))]
-        y_data = [0.0] * 20
-
-        curve = plot.plot(x_data, y_data, pen='r')
-
-        return container, curve, x_data, y_data
-
     def __init__(self, stat_obj, parent=None):
         super().__init__(parent)
         self.ui = Ui_Dialog_graphWindow()
