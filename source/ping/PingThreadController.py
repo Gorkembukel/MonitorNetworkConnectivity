@@ -93,7 +93,8 @@ class PingTask:
                 duration=self.duration,
                 **self.kwargs
             )
-
+    def join(self):
+        self.thread.join()
 
 class ScapyPinger:
     def __init__(self):
@@ -187,6 +188,7 @@ class ScapyPinger:
     def stop_All(self):
         for task in self.tasks.values():  #  sadece value'larla ilgileniyoruz
             task.stop(isKill=True)
+            task.join()
 
     def toggleBeep_by_address(self, address:str):
         task = self.get_task(address=address)

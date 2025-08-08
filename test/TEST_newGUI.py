@@ -2,7 +2,7 @@ import sys,time
 from datetime import datetime
 from dataclasses import dataclass, field
 from typing import List, Dict
-from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog,QTableWidgetItem,QMenu
+from PyQt5.QtWidgets import QApplication, QMainWindow, QDialog,QTableWidgetItem,QMenu,QAction,QDockWidget
 from PyQt5.QtCore import QTimer,QThread, pyqtSignal,Qt,QTime,QDateTime
 from PyQt5.QtGui import QColor,QPalette
 from QTDesigns.MainWindow import Ui_MonitorNetWorkConnectivity
@@ -35,6 +35,7 @@ class ChangeParameterWindow(QDialog):
         self.task = task
         self.setWindowTitle(task.address)
         self.isInfinite = task.isInfinite
+        self.timeOut = str(int(task.kwargs['timeout']))
         self.ui.checkBox_infinite.setCheckState(self.isInfinite)
         now = datetime.now()
         #calender için ayar
@@ -45,6 +46,7 @@ class ChangeParameterWindow(QDialog):
         self.ui.lineEdit_ip.setText(task.address)
         self.ui.lineEdit_interval.setText(str(task.interval_ms))
         self.ui.lineEdit_payloadsize.setText(str(task.kwargs['payload_size']))
+        self.ui.lineEdit_timeout.setText(self.timeOut)
         
         self.dissableTabsExcept()
 
@@ -72,7 +74,10 @@ class ChangeParameterWindow(QDialog):
             interval_text = self.ui.lineEdit_interval.text().strip()
             if interval_text:
                 self.task.interval_ms = int(interval_text)
-
+            #timeout
+            timeout_text = self.ui.lineEdit_timeout.text().strip()
+            if timeout_text:
+                self.task.kwargs['timeout'] = int(timeout_text)
             # Payload Size
             payload_text = self.ui.lineEdit_payloadsize.text().strip()
             if payload_text:
@@ -96,17 +101,27 @@ class ChangeParameterWindow(QDialog):
         except ValueError as e:
             print(f"❗ Hatalı giriş: {e}")
             QtWidgets.QMessageBox.warning(self, "Geçersiz Girdi", "Lütfen tüm değerleri sayısal ve doğru formatta girin.")
-
+    def __del__(self):
+        print(f"Change appley penceresinin objesi silindi")
 
 class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
     pingTargetsReady = pyqtSignal()#
-    def __init__(self, parent= None):
-        super().__init__(parent)
-        
+    def __init__(self, parent= None, last_ip_list=None): # , last_ip_list=None
+        global stats_list_global
+        super().__init__(parent)                      
         self.ui = Ui_pingWindow()
         self.original_color = self.palette().color(QPalette.Window)
         self.parent = parent
         self.ui.setupUi(self)
+
+        if last_ip_list and not stats_list_global:            
+            for line in last_ip_list:
+                self.ui.plainTextEdit.insertPlainText(f"{line}\n")
+            
+        
+            
+        self.textInBegining = self.get_ıp_for_plainText()# statlist'e göre ip addreslerini alıp plain text'e ekler ve en sonki halini döndürür 
+
         self.data = Pass_Data_ScapyPinger()
         self.isInfinite = False
         self.isKill_Mod = False
@@ -143,61 +158,96 @@ class PingWindow(QDialog):  # Yeni pencere Ping atmak için parametre alır
             self.isInfinite =False
         else:
             self.isInfinite = True
+    def get_ıp_for_plainText(self):
+        global stats_list_global
+
+        for ip in stats_list_global.keys():
+            self.ui.plainTextEdit.insertPlainText(f"{ip}\n")
+        return self.ui.plainTextEdit.toPlainText()
 
     def changeDurationLabel(self,toggled):
         self.ui.label_duration.setDisabled(toggled)
     
 
-    
+    def delete_address_plainText(self, addresses: list):
+        """
+        address_list: Güncel IP listesi (her eleman bir IP stringi olacak)
+        self.textInBegining: Başlangıçtaki IP'ler (string, satır satır)
+        """
+        global scapyPinger_global
 
+        # Başlangıç IP'lerini satır bazında al
+        lines_in_beginning = set(
+            l.strip() for l in self.textInBegining.splitlines() if l.strip()
+        )
+
+        # Parametreden gelen güncel IP listesi
+        lines_in_address = set(l.strip() for l in addresses if l.strip())
+
+        # Sadece başlangıçta olup güncel listede olmayan IP'ler
+        ips_to_delete = lines_in_beginning - lines_in_address
+
+        # Silme işlemi
+        for ip in ips_to_delete:
+            scapyPinger_global.delete_stats(address=ip)
     
     def extract_addresses(self):
-        global headers 
-        global scapyPinger_global
-        global stats_list_global
+        """
+        PlainTextEdit'teki IP listesini okur, mevcut çalışan hedeflerle karşılaştırır.
+        Sadece yeni eklenenleri başlatır ve listeden çıkarılanları durdurup siler.
+        """
+        global headers, scapyPinger_global, stats_list_global
+
+        # 0) Header'ları bir kez al (gereksiz tekrarları önle)
         headers = list(get_data_keys())
-        
-        kwargs = {}#scapypinger için argümanlar.Eklemek istediğiniz armünanları pingthreadController içindeki filtre metoduna tanıtmalısınız 
-                   #PingThreadController ->PingThread ->icmplib ping ->ICMPRequest
-        text = ""
-        # 1️⃣ PlainTextEdit içeriğini al
+
+        # 1) UI'dan adresleri oku
         text = self.ui.plainTextEdit.toPlainText()
-        # 2️⃣ Satırları ayır ve boş olmayanları döndür
         addresses = [line.strip() for line in text.splitlines() if line.strip()]
-        if addresses and addresses[0].startswith("**"):
-            print("İlk satır '**' ile başlıyor.")
-            self.ui.checkBox_KillMod.setVisible(True)
-            
-        self.data.targets = addresses#TODO deepcopy gerekebilir mi?
 
-         # 2️⃣ SpinBox'lardan parametreleri al
-        payload_size = self.ui.spinBox_byte.value()
-        payload_size = 56 if not payload_size else payload_size#FIXME payload_size sıfır olmasın diye default değer girildi ama defalut değeri hem burada hem kendi yerinde (icmplib pig) olması 
-                                                               # doğru gelmedi. bu argümanlar boş olduğunda add_addresslist'e geçmeyecek şekilde düzenlemek daha doğru olur
+        # KillMod uyarısı (ilk satır "**" ile başlıyorsa checkbox'ı göster)
+        self.ui.checkBox_KillMod.setVisible(bool(addresses and addresses[0].startswith("**")))
 
-        interval_ms = self.ui.spinBox_interval.value()
-        isInfinite = self.ui.pushButton_durationUnlimited.isChecked()
-        duration = self.ui.spinBox_duration.value() if self.ui.spinBox_duration.isEnabled() else None# kutu aktif değilse değerini okumaz
-        timeout = self.ui.spinBox_timeout.value() / 1000 #ms çevirisi
+        # 2) Parametreleri topla (UI default'lar doğruysa ek korumaya gerek kalmaz)
+        payload_size = self.ui.spinBox_byte.value() or 56
+        interval_ms  = self.ui.spinBox_interval.value()
+        isInfinite   = self.ui.pushButton_durationUnlimited.isChecked()
+        duration     = self.ui.spinBox_duration.value() if self.ui.spinBox_duration.isEnabled() else None
+        timeout      = self.ui.spinBox_timeout.value() 
 
-        qt_datetime = None
+        kwargs = {}
         if self.ui.dateTimeEdit.isEnabled():
-            qt_datetime = self.ui.dateTimeEdit.dateTime()
+            kwargs["end_datetime"] = self.ui.dateTimeEdit.dateTime().toPyDateTime()
 
-        if qt_datetime:
-            kwargs["end_datetime"] = qt_datetime.toPyDateTime()#pingThread'de date objesi olarak kullanılır
-        
-        
-        print(f"is infinite gui {isInfinite}")
-        scapyPinger_global.add_addressList(timeout = timeout ,addresses=addresses,isKill_Mod=self.isKill_Mod,interval_ms=interval_ms, duration= duration,isInfinite=isInfinite, payload_size = payload_size,**kwargs)
-        text = ""
-        interval_ms = None
-        isInfinite = None
-        duration = None
-        
-        qt_datetime = None
-        kwargs = None
+        # 3) Mevcut çalışan hedefler ve yeni hedefler arasında fark al
+        current_set = set(stats_list_global.keys()) if isinstance(stats_list_global, dict) else set()
+        new_set     = set(addresses)
 
+        to_add    = list(new_set - current_set)
+        to_remove = list(current_set - new_set)
+
+        # 4) Eklenmesi gerekenleri tek seferde ekle
+        if to_add:
+            scapyPinger_global.add_addressList(
+                timeout=timeout,
+                addresses=to_add,
+                isKill_Mod=self.isKill_Mod,
+                interval_ms=interval_ms,
+                duration=duration,
+                isInfinite=isInfinite,
+                payload_size=payload_size,
+                **kwargs
+            )
+
+        # 5) Listeden çıkarılanları durdur ve sil
+        for ip in to_remove:
+            scapyPinger_global.stop_address(address=ip, isKill=True)
+            scapyPinger_global.delete_stats(address=ip)
+
+        # 6) Snapshot'ı güncelle (bir sonraki karşılaştırma için)
+        self.textInBegining = "\n".join(addresses)
+
+        # 7) Stats cache'i tazele ve tabloya haber ver
         stats_list_global = scapyPinger_global.find_all_stats()
         self.pingTargetsReady.emit()
 
@@ -220,6 +270,13 @@ class MainWindow(QMainWindow):
 
         self.ui.actionOpen_Iperf.triggered.connect(self.open_iperf)
 
+         # (İsteğe bağlı) Menüde düzgün isimler gözüksün
+        self.ui.dockWidget_pinglist.setWindowTitle("Ping Listesi")
+        self.ui.dockWidget_2.setWindowTitle("Grafikler / Diğer")
+
+        # --- VIEW MENÜSÜNÜ DOLDUR ---
+        self._attach_view_menu()
+
         self.tableTarget.viewport().installEventFilter(self)
         self.tableTarget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.ui.tableTarget.cellDoubleClicked.connect(self.on_row_clicked)
@@ -230,6 +287,53 @@ class MainWindow(QMainWindow):
         self.stats_timer.setInterval(1000)  # 1000ms = 1 saniye#60fps için girilen değr
         self.stats_timer.timeout.connect(self.update_Stats)
         self.stats_timer.start()
+
+
+        #ip addreslerini program başında ip.txt^den oku
+        try:
+            with open('ip.txt', 'r', encoding='utf-8') as output:
+                self.last_ip_list = [line.strip() for line in output if line.strip()]
+        except FileNotFoundError:
+            self.last_ip_list = []
+
+     # ----- VIEW MENU -----
+    def _attach_view_menu(self):
+        mv = self.ui.menuView
+        mv.clear()
+
+        # Paneller alt menüsü (otomatik toggleViewAction listesi)
+        self.menuPanels = QMenu("Paneller", self)
+        mv.addMenu(self.menuPanels)
+        self._refresh_panels_menu()
+
+        mv.addSeparator()
+
+        # Hepsini Göster / Hepsini Gizle
+        act_show_all = QAction("Hepsini Göster", self)
+        act_show_all.triggered.connect(self._show_all_docks)
+        mv.addAction(act_show_all)
+
+        act_hide_all = QAction("Hepsini Gizle", self)
+        act_hide_all.triggered.connect(self._hide_all_docks)
+        mv.addAction(act_hide_all)
+
+    def _refresh_panels_menu(self):
+        """Tüm QDockWidget'lar için toggleViewAction ekler."""
+        self.menuPanels.clear()
+        for dock in self.findChildren(QDockWidget):
+            act = dock.toggleViewAction()   # Dock’un kendi göster/gizle action’ı
+            act.setCheckable(True)          # Menüde tikli gözüksün
+            self.menuPanels.addAction(act)
+
+    def _show_all_docks(self):
+        for dock in self.findChildren(QDockWidget):
+            dock.show()
+            dock.raise_()
+
+    def _hide_all_docks(self):
+        for dock in self.findChildren(QDockWidget):
+            dock.hide()
+    #View için
     def open_iperf(self):
         self.iperf_window = IperfWindow()
         self.iperf_window.show()
@@ -370,7 +474,7 @@ class MainWindow(QMainWindow):
 
 
     def open_pingWindow(self):
-        self.pingWindow = PingWindow(self)
+        self.pingWindow = PingWindow(self,self.last_ip_list)
         self.pingWindow.pingTargetsReady.connect(self.update_Stats)
         
         self.pingWindow.show()
@@ -398,8 +502,23 @@ class MainWindow(QMainWindow):
     def add_pings(self):
         pass
     def closeEvent(self, event):
-        print("Uygulama kapanıyor, thread'ler durduruluyor...")
-        
+        print("Uygulama kapanıyor, en son ki ip'ler txt'e aktarılıyor...")
+          # ip.txt'ye kaydet
+        if stats_list_global:  
+            try:
+                if isinstance(stats_list_global, dict):
+                    ips_to_save = list(stats_list_global.keys())
+                else:
+                    ips_to_save = []
+
+                with open('ip.txt', 'w', encoding='utf-8') as f:
+                    f.write("\n".join(ips_to_save))
+
+                print(f"ip.txt kaydedildi ({len(ips_to_save)} IP).")
+            except Exception as e:
+                print("ip.txt kaydedilemedi:", e)
+
+        print("Uygulama kapanıyor, threadlerin kapanması bekleniyor")
         # Thread nesnelerini döngüyle durdur
         for task in scapyPinger_global.tasks.values():
             task.stop(isKill = True)

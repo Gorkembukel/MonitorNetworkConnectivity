@@ -28,10 +28,14 @@ class PingStats:
     def __init__(self, target: str):
         self._target = target
         self._rttList: List[Optional[float]] = []
-        self._timeStamp_for_rttList: List[Optional[int]] = []
+        self._timeStamp_for_rttList: List[Optional[int]] = []        
         self._rate: float = 0
         self.addTime: float
-    
+        self.timeOut= 300
+
+    def set_timeout(self, timeout):
+        print(f"timeeee out {self.timeOut}")
+        self.timeOut = timeout 
     def add_result(self, rtt: Optional[float], time:int = None):
         self._rttList.append(rtt)
         self._timeStamp_for_rttList.append(time)
@@ -40,16 +44,16 @@ class PingStats:
     @property
     def target(self): return self._target
     @property 
-    def filterted_rtt(self): return [r if r is not None and r < 300 else None for r in self._rttList]
+    def filterted_rtt(self): return [r if r is not None and r < self.timeOut else None for r in self._rttList]
     @property
     def valid_rtt(self):
         """Gerçek RTT değerleri: 0 veya daha büyük"""
-        return [r for r in self._rttList if r is not None and r <300]
+        return [r for r in self._rttList if r is not None and r <self.timeOut]
 
     @property
     def failed_count(self):
         """300 olanları sayar (timeout'lar)"""
-        return len([r for r in self._rttList if r == 300])
+        return len([r for r in self._rttList if r == self.timeOut])
     @property
     def sent(self):
         return len(self._rttList)
@@ -84,7 +88,7 @@ class PingStats:
     @property
     def last_result(self): 
         if not self._rttList: return "No Data"
-        return "Success" if self._rttList[-1] is not None and self._rttList[-1] < 300 else "Timeout"#return "Success" if self._rttList[-1] is not None else "Timeout"
+        return "Success" if self._rttList[-1] is not None and self._rttList[-1] < self.timeOut else "Timeout"#return "Success" if self._rttList[-1] is not None else "Timeout"
     @property
     def rate(self):
         return self._rate
@@ -103,11 +107,11 @@ class PingStats:
             "sent": self.sent,
             "received": self.received,
             "failed": self.failed,
-            "success_rate": round(self.success_rate, 6),
+            "success_rate": round(self.success_rate, 2),
             "avg_rtt": self.average_rtt,
-            "min_rtt": round(self.min_rtt, 6) if self.min_rtt is not None else None,
-            "max_rtt": round(self.max_rtt, 6) if self.max_rtt is not None else None,
-            "jitter": round(self.jitter, 6) if self.jitter is not None else None,
+            "min_rtt": round(self.min_rtt, 2) if self.min_rtt is not None else None,
+            "max_rtt": round(self.max_rtt, 2) if self.max_rtt is not None else None,
+            "jitter": round(self.jitter, 2) if self.jitter is not None else None,
             "last_result": self.last_result,
             "rate": round(self.rate, 2) if self.rate is not None else None
         }
@@ -136,7 +140,7 @@ class PingStats:
             print(f"[{self._target}] Geçerli RTT verisi yok.")
             return"""
         
-        pg.plot(self._rttList, pen='g', symbol='o', title=f"RTT for {self._target}").setYRange(-220,300)
+        pg.plot(self._rttList, pen='g', symbol='o', title=f"RTT for {self._target}").setYRange(-220, self.timeOut)
 
     def get_rtt_curve(self):
         data = self.get_time_series_data()

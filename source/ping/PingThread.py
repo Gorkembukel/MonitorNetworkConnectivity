@@ -5,11 +5,10 @@ import time
 
 
 from source.ping.PingStrategy import  Context,LowRatePing, HighRatePing
-from source.ping.PingStats import PingStats
+
 from icmplib import ping as icmp_ping
-import struct
-from icmplib.sockets import ICMPv4Socket
-from icmplib.models import ICMPRequest
+
+
 import os
 class Behivior():
     criticle_threshHold_ms = 1# eğer interval bunun altında ise standart ping yetmez
@@ -94,7 +93,7 @@ class PingThread(threading.Thread):
         self.end_datetime = end_datetime
         self.count = count
         self.interval_ms = interval_ms / 1000
-        self.timeout = timeout
+        self.timeout = timeout 
         self.id = id
         self.source = source
         self.startTime = time.time()
@@ -105,6 +104,8 @@ class PingThread(threading.Thread):
         self.isBeep = False
         self._pause_start_time = 0
         stats.setAddress(address)
+
+        self.stats.set_timeout(self.timeout)
         self.isKill=False #threadi komple kapatır
     def _should_continue(self):#FIXME burada is kill tanımlı o yüzden diğer yerlerden kadlırabiliriz gibi
         print("kill öncesi")
@@ -130,7 +131,7 @@ class PingThread(threading.Thread):
                 try:
                     send_time = time.time()
                     print(f"[{self.address}] ➡️ icmp_ping kwargs: {self.kwargs}")
-                    result = icmp_ping(address=self.address, count=self.count,interval=self.interval_ms, timeout=self.timeout, id=self.id, source=self.source,
+                    result = icmp_ping(address=self.address, count=self.count,interval=self.interval_ms, timeout=self.timeout/1000, id=self.id, source=self.source,
             family=self.family, privileged=self.privileged, **self.kwargs)
                     if result.is_alive:
                         #rtt = result.avg_rtt
@@ -145,12 +146,12 @@ class PingThread(threading.Thread):
                             print('\a')
                         print(f"[{self.address}] ✅ {rtt:.2f} ms (icmplib)")
                     else:
-                        self.stats.add_result(300, time.time() + 10800)
+                        self.stats.add_result(self.timeout, time.time() + 10800) #timeout burada saniyeden ms'ye çevirilir
                         print(f"[{self.address}] ❌ Timeout (icmplib)")
                     
                 except Exception as e:
                     print(f"[{self.address}] ⚠️ ICMP ping exception: {e}")
-                    self.stats.add_result(300, time.time() + 10800)
+                    self.stats.add_result(self.timeout, time.time() + 10800)
                 recv_time = time.time()
                 reply_time = recv_time -send_time
                 sleep_time = self.interval_ms# threadin tam olarak interval kadar uyuması için ping atma süresi kadar çıkartıyorum çünkü zaten o kadar zaman geçiyo             
