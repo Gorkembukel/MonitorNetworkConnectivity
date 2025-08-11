@@ -280,6 +280,7 @@ class MainWindow(QMainWindow):
         self.tableTarget.viewport().installEventFilter(self)
         self.tableTarget.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
         self.ui.tableTarget.cellDoubleClicked.connect(self.on_row_clicked)
+        
         #self.tableTarget.customContextMenuRequested.connect(self.ip_control_interface)
 
         self.ui.pushButton_pingDurdur.clicked.connect(self.stopAllThreads)
@@ -382,6 +383,11 @@ class MainWindow(QMainWindow):
             
             #Qmenu, ip_control_interface için action menusu
             ip_control_menu = QtWidgets.QMenu()
+            if scapyPinger_global.is_alive_ping(address=address):
+                ip_control_menu.addAction("Yeniden Başlat",lambda:self.restart_ping(address=address))
+            else:
+                ip_control_menu.addAction("Ping Başlat",lambda:self.start_ping(address=address))
+            
             ip_control_menu.addAction("Grafik Aç",lambda:self.open_graph(address=address))
             ip_control_menu.addAction("Beep",lambda :self.toggleBeep_by_address(address))
             ip_control_menu.addAction("Durdur",lambda:self.ip_stop(address=address, isToggle =True, isKill =False))
@@ -435,7 +441,7 @@ class MainWindow(QMainWindow):
                 self.target_to_row[target] = row
 
             # ✅ Renk sadece bir kere belirleniyor
-            last_result = summary.get("last_result", "")
+            last_result = summary.get("last result", "")
             color = QColor(200, 255, 200) if last_result == "Success" else QColor(255, 200, 200)
 
             # 🔁 Hem hücreyi doldur, hem rengini ver
@@ -453,12 +459,15 @@ class MainWindow(QMainWindow):
         else:
             self.ui.pushButton_pingDurdur.setEnabled(True)
         
-
+        self.ui.tableTarget.resizeColumnsToContents()
     def stopAllThreads(self):
         scapyPinger_global.stop_All()
     
 
-
+    def start_ping(self, address:str):
+        scapyPinger_global.start_task(address=address)
+    def restart_ping(self, address:str):
+        scapyPinger_global.restart_task(address=address)
 
     def set_table_headers(self):
         headers = list(get_data_keys())
@@ -479,7 +488,7 @@ class MainWindow(QMainWindow):
         
         self.pingWindow.show()
     def on_row_clicked(self, row, column):
-        print("mahmut")
+        
         table = self.ui.tableTarget
         column_count = table.columnCount()
 
@@ -491,7 +500,7 @@ class MainWindow(QMainWindow):
             else:
                 values.append("")
 
-        print(f"Seçilen satır verileri: {values}")
+        
 
     def open_changeSettingsWindow(self, task:PingTask):
         if task:
@@ -520,9 +529,8 @@ class MainWindow(QMainWindow):
 
         print("Uygulama kapanıyor, threadlerin kapanması bekleniyor")
         # Thread nesnelerini döngüyle durdur
-        for task in scapyPinger_global.tasks.values():
-            task.stop(isKill = True)
-            task.join()  # thread kapanmasını bekle
+        scapyPinger_global.stop_All()
+         # thread kapanmasını bekle
 
         event.accept()  # pencerenin kapanmasına izin ver
 

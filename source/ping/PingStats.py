@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import List, Optional
 from statistics import mean, stdev
 import matplotlib.pyplot as plt
@@ -11,12 +12,16 @@ dict_of_data_keys = {# buradaki keyler tablodaki sütun başlıkları için kull
             "sent": "",
             "received": "",
             "failed": "",
-            "success_rate": "",
-            "avg_rtt": "",
-            "min_rtt": "",
-            "max_rtt": "",
+            "Last failed on": "",
+            "Consecutive failed": "",
+            "Max Consecutive failed": "",
+            "success rate": "",
+            "min rtt": "",
+            "avg rtt": "",            
+            "max rtt": "",
+            "Last success on": "",            
             "jitter": "",
-            "last_result": "",
+            "last result": "",
             "rate":""
         }
 
@@ -33,14 +38,56 @@ class PingStats:
         self.addTime: float
         self.timeOut= 300
 
+        self._consecutive_failed = 0
+        self._last_consecutive_failed = 0
+        self._max_consecutive_failed = 0
+
+         # zaman kayıtları
+        self._last_success_on = None
+        self._last_failed_on = None
     def set_timeout(self, timeout):
-        print(f"timeeee out {self.timeOut}")
+        
         self.timeOut = timeout 
+
+
     def add_result(self, rtt: Optional[float], time:int = None):
         self._rttList.append(rtt)
         self._timeStamp_for_rttList.append(time)
+
+      # başarısız kriteri: None veya timeout'a eşit/büyük        
+
+        if (rtt is None) or (rtt >= self.timeOut):# eklenen rtt bilgisi timeout mu 
+            #evet, şimdi gelen ping, timeout olmuş
+            self._consecutive_failed += 1
+            self._last_failed_on = datetime.now()
+            if self._consecutive_failed > self._max_consecutive_failed:
+                self._max_consecutive_failed = self._consecutive_failed
+            else:
+                self._last_consecutive_failed = self._consecutive_failed
+
+        else:# hayır ping başarılı
+            # bir seri bitti: geçmişi sakla
+            self._last_success_on = datetime.now()
+
+            if self._consecutive_failed > 0:
+                self._last_consecutive_failed = self._consecutive_failed
+                # opsiyonel:
+                # self._failure_streaks.append(self._consecutive_failed)
+            self._consecutive_failed = 0
+
+        
     def update_rate(self, pulse:int):
         self.rate = 1/pulse
+
+    @property
+    def last_success_on(self):
+        """Son başarılı ping zamanı (datetime veya None)"""
+        return self._last_success_on
+
+    @property
+    def last_failed_on(self):
+        """Son başarısız ping zamanı (datetime veya None)"""
+        return self._last_failed_on
     @property
     def target(self): return self._target
     @property 
@@ -82,6 +129,14 @@ class PingStats:
         valid = [r for r in self.filterted_rtt if r is not None]
         return max(valid) if valid else None
     @property
+    def consequtive_failed(self):
+        return self._last_consecutive_failed
+    
+    @property
+    def max_consequtive_failed(self):
+        return self._max_consecutive_failed
+
+    @property
     def jitter(self): 
         valid = [r for r in self.filterted_rtt if r is not None]
         return round(stdev(valid), 6) if len(valid) > 1 else 0.0
@@ -107,18 +162,21 @@ class PingStats:
             "sent": self.sent,
             "received": self.received,
             "failed": self.failed,
-            "success_rate": round(self.success_rate, 2),
-            "avg_rtt": self.average_rtt,
-            "min_rtt": round(self.min_rtt, 2) if self.min_rtt is not None else None,
-            "max_rtt": round(self.max_rtt, 2) if self.max_rtt is not None else None,
+            "Consecutive failed": self.consequtive_failed,
+            "Max Consecutive failed": self.max_consequtive_failed,
+            "success rate": f"% {round(self.success_rate, 2)}",
+            "avg rtt": self.average_rtt,
+            "min rtt": round(self.min_rtt, 2) if self.min_rtt is not None else None,
+            "max rtt": round(self.max_rtt, 2) if self.max_rtt is not None else None,
             "jitter": round(self.jitter, 2) if self.jitter is not None else None,
-            "last_result": self.last_result,
+            "Last success on": self.last_success_on.strftime("%d-%m-%Y %H:%M:%S") if self.last_success_on else None,
+            "Last failed on": self.last_failed_on.strftime("%d-%m-%Y %H:%M:%S") if self.last_failed_on else None,
+            "last result": self.last_result,
             "rate": round(self.rate, 2) if self.rate is not None else None
         }
     
     def get_time_series_data(self):  # zaman ve rtt'yi birleştirir
-        valid_rtt_list = [r if r is not None else -200 for r in self._rttList]
-        valid_timeList = [t for t in self._timeStamp_for_rttList if t is not None]
+        
         return [
             (t, r)
             for t, r in zip(self._timeStamp_for_rttList, self._rttList)

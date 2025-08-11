@@ -193,4 +193,22 @@ class ScapyPinger:
     def toggleBeep_by_address(self, address:str):
         task = self.get_task(address=address)
         task.toggleBeep()
-
+    def is_alive_ping(self,address:str):
+        task = self.get_task(address=address)
+        return task.is_alive()
+    def start_task(self,address:str):
+        task = self.get_task(address=address)
+        if not task.thread:
+            task.start()
+        else:
+            print(f"{task} zaten başlatılmış")
+    def restart_task(self,address:str):
+        task = self.get_task(address=address)
+        if task.thread:
+            task.thread = None            
+            task.stats = PingStats(task.address)
+            self.stats_list[address] = task.stats
+            task.start()
+            task.start()
+        else:
+            print(f"{task} başlatılmamış")
