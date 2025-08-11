@@ -200,7 +200,7 @@ class PingStats:
         
         pg.plot(self._rttList, pen='g', symbol='o', title=f"RTT for {self._target}").setYRange(-220, self.timeOut)
 
-    def get_rtt_curve(self):
+    """def get_rtt_curve(self):
         data = self.get_time_series_data()
         
         
@@ -209,8 +209,35 @@ class PingStats:
 
         
         x, y = zip(*data)
-        return PlotDataItem(x=x, y=y, pen='g', symbol='o', name="RTT Trend")
-    
+        return PlotDataItem(x=x, y=y, pen='g', symbol='o', name="RTT Trend")"""
+    def get_rtt_curve(self):
+        
+        if not self._rttList or not self._timeStamp_for_rttList:
+            return pg.PlotDataItem(x=[], y=[], pen='g', symbol='o', name="RTT Trend")
+
+        x, y, brushes, pens = [], [], [], []
+
+        red_b = pg.mkBrush('r'); green_b = pg.mkBrush('g')
+        red_p = pg.mkPen('r');   green_p = pg.mkPen('g')
+
+        for t, r in zip(self._timeStamp_for_rttList, self._rttList):
+            if t is None:
+                continue
+            is_timeout = (r is None) or (r >= self.timeOut)
+            x.append(t)
+            y.append(self.timeOut if is_timeout else r)
+            brushes.append(red_b if is_timeout else green_b)
+            pens.append(red_p if is_timeout else green_p)
+
+        return pg.PlotDataItem(
+            x=x, y=y,
+            pen='b',
+            symbol='o', symbolSize=8,
+            symbolBrush=brushes,
+            symbolPen=pens,
+            name="RTT Trend"
+        )
+        
     def get_jitter_bar(self):
         
         return BarGraphItem(x=[0], height=[self.jitter], width=0.6, brush='b')
