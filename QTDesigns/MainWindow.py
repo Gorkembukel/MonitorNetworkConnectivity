@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'QTDesigns/MainWindow.ui'
+# Form implementation generated from reading ui file 'MainWindow.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
 #
@@ -49,6 +49,8 @@ class Ui_MonitorNetWorkConnectivity(object):
         self.menuIperf.setObjectName("menuIperf")
         self.menuView = QtWidgets.QMenu(self.menubar)
         self.menuView.setObjectName("menuView")
+        self.menussH = QtWidgets.QMenu(self.menubar)
+        self.menussH.setObjectName("menussH")
         MonitorNetWorkConnectivity.setMenuBar(self.menubar)
         self.statusbar = QtWidgets.QStatusBar(MonitorNetWorkConnectivity)
         self.statusbar.setObjectName("statusbar")
@@ -111,9 +113,13 @@ class Ui_MonitorNetWorkConnectivity(object):
         MonitorNetWorkConnectivity.addDockWidget(QtCore.Qt.DockWidgetArea(1), self.dockWidget_2)
         self.actionOpen_Iperf = QtWidgets.QAction(MonitorNetWorkConnectivity)
         self.actionOpen_Iperf.setObjectName("actionOpen_Iperf")
+        self.actionopen_ssh_window = QtWidgets.QAction(MonitorNetWorkConnectivity)
+        self.actionopen_ssh_window.setObjectName("actionopen_ssh_window")
         self.menuIperf.addAction(self.actionOpen_Iperf)
+        self.menussH.addAction(self.actionopen_ssh_window)
         self.menubar.addAction(self.menuIperf.menuAction())
         self.menubar.addAction(self.menuView.menuAction())
+        self.menubar.addAction(self.menussH.menuAction())
 
         self.retranslateUi(MonitorNetWorkConnectivity)
         QtCore.QMetaObject.connectSlotsByName(MonitorNetWorkConnectivity)
@@ -126,7 +132,10 @@ class Ui_MonitorNetWorkConnectivity(object):
         self.pushButton_pingDurdur.setText(_translate("MonitorNetWorkConnectivity", "Ping Durdur"))
         self.menuIperf.setTitle(_translate("MonitorNetWorkConnectivity", "Iperf"))
         self.menuView.setTitle(_translate("MonitorNetWorkConnectivity", "View"))
+        self.menussH.setTitle(_translate("MonitorNetWorkConnectivity", "ssH"))
         self.tableTarget.setSortingEnabled(True)
         self.label_2.setText(_translate("MonitorNetWorkConnectivity", "Total Thread Count"))
         self.actionOpen_Iperf.setText(_translate("MonitorNetWorkConnectivity", "Open Iperf"))
         self.actionOpen_Iperf.setShortcut(_translate("MonitorNetWorkConnectivity", "Ctrl+F"))
+        self.actionopen_ssh_window.setText(_translate("MonitorNetWorkConnectivity", "open ssh window"))
+        self.actionopen_ssh_window.setShortcut(_translate("MonitorNetWorkConnectivity", "Ctrl+H"))

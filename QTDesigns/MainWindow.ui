@@ -91,8 +91,15 @@
      <string>View</string>
     </property>
    </widget>
+   <widget class="QMenu" name="menussH">
+    <property name="title">
+     <string>ssH</string>
+    </property>
+    <addaction name="actionopen_ssh_window"/>
+   </widget>
    <addaction name="menuIperf"/>
    <addaction name="menuView"/>
+   <addaction name="menussH"/>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
   <widget class="QDockWidget" name="dockWidget_pinglist">
@@ -208,6 +215,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+F</string>
+   </property>
+  </action>
+  <action name="actionopen_ssh_window">
+   <property name="text">
+    <string>open ssh window</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+H</string>
    </property>
   </action>
  </widget>

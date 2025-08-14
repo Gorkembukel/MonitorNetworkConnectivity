@@ -209,6 +209,6 @@ class ScapyPinger:
             task.stats = PingStats(task.address)
             self.stats_list[address] = task.stats
             task.start()
-            task.start()
+            
         else:
             print(f"{task} başlatılmamış")

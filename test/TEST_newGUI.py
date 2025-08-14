@@ -16,6 +16,7 @@ from PyQt5 import QtWidgets
 from source.ping.GUI_graph import GraphWindow
 import subprocess, os
 from source.GUI.iperf_window import IperfWindow
+from source.GUI.ssh_window import SSH_Client_Window
 scapyPinger_global = ScapyPinger()
 stats_list_global = scapyPinger_global.find_all_stats()
 headers = List
@@ -269,7 +270,7 @@ class MainWindow(QMainWindow):
         self.ui.pushButton_pingDurdur.setEnabled(False)
 
         self.ui.actionOpen_Iperf.triggered.connect(self.open_iperf)
-
+        self.ui.actionopen_ssh_window.triggered.connect(self.open_sshControlWindow)
          # (İsteğe bağlı) Menüde düzgün isimler gözüksün
         self.ui.dockWidget_pinglist.setWindowTitle("Ping Listesi")
         self.ui.dockWidget_2.setWindowTitle("Grafikler / Diğer")
@@ -338,6 +339,9 @@ class MainWindow(QMainWindow):
     def open_iperf(self):
         self.iperf_window = IperfWindow()
         self.iperf_window.show()
+    def open_sshControlWindow(self):
+        self.sshWindow = SSH_Client_Window()
+        self.sshWindow.show()
     def open_graph(self,address):
         task = scapyPinger_global.get_task(address=address)
         statObject = task.stats

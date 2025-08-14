@@ -45,6 +45,25 @@ class PingStats:
          # zaman kayıtları
         self._last_success_on = None
         self._last_failed_on = None
+
+        #min max mean, jitter için
+        self._n_valid = 0
+        self._mean = 0.0
+        self._M2 = 0.0
+        self._min = None
+        self._max = None
+
+        #graph için  bazı tanımlamalar. her seferinde yeniden hesaplamak yerine en son gelen veriyi hesaplamak için 
+          # --- plot cache ---
+        self._plot_x = []
+        self._plot_y = []
+        self._plot_brushes = []
+        self._plot_pens = []
+        self._plot_len = 0   # hızlı karşılaştırma için
+
+        # brush/pen objelerini 1 kez oluştur (mkBrush/mkPen pahalı)
+        self._b_red  = pg.mkBrush('r'); self._b_green = pg.mkBrush('g')
+        self._p_red  = pg.mkPen('r');   self._p_green = pg.mkPen('g')
     def set_timeout(self, timeout):
         
         self.timeOut = timeout 
@@ -65,16 +84,30 @@ class PingStats:
             else:
                 self._last_consecutive_failed = self._consecutive_failed
 
-        else:# hayır ping başarılı
+        else:# ping başarılı yani #if (rtt is not None) and (rtt < self.timeOut):
             # bir seri bitti: geçmişi sakla
-            self._last_success_on = datetime.now()
+            self._last_success_on = datetime.now()#en son başarılı ping zamanını kaydeder
 
             if self._consecutive_failed > 0:
                 self._last_consecutive_failed = self._consecutive_failed
                 # opsiyonel:
                 # self._failure_streaks.append(self._consecutive_failed)
             self._consecutive_failed = 0
+            #min mean max bulma
+            self._n_valid += 1
+            if self._min is None or rtt < self._min: self._min = rtt
+            if self._max is None or rtt > self._max: self._max = rtt
 
+            delta = rtt - self._mean
+            self._mean += delta / self._n_valid
+            self._M2 += delta * (rtt - self._mean)
+
+        # en sonda sadece yeni noktayı cache’e ekle:
+        self._append_plot_point(time, rtt)
+
+
+        
+            
         
     def update_rate(self, pulse:int):
         self.rate = 1/pulse
@@ -118,16 +151,14 @@ class PingStats:
         return (self.received / self.sent * 100) if self.sent else 0.0
     @property
     def average_rtt(self): 
-        valid = [r for r in self.filterted_rtt if r is not None]
-        return round(mean(valid), 2) if valid else None
+       
+        return self._mean
     @property
     def min_rtt(self): 
-        valid = [r for r in self.filterted_rtt if r is not None]
-        return min(valid) if valid else None
+        return self._min
     @property
     def max_rtt(self): 
-        valid = [r for r in self.filterted_rtt if r is not None]
-        return max(valid) if valid else None
+        return self._max
     @property
     def consequtive_failed(self):
         return self._last_consecutive_failed
@@ -138,8 +169,10 @@ class PingStats:
 
     @property
     def jitter(self): 
-        valid = [r for r in self.filterted_rtt if r is not None]
-        return round(stdev(valid), 6) if len(valid) > 1 else 0.0
+        if self._n_valid > 1:
+            var = self._M2 / (self._n_valid - 1)
+            return round(var ** 0.5, 6)
+        return 0.0
     @property
     def last_result(self): 
         if not self._rttList: return "No Data"
@@ -210,6 +243,23 @@ class PingStats:
         
         x, y = zip(*data)
         return PlotDataItem(x=x, y=y, pen='g', symbol='o', name="RTT Trend")"""
+    
+    def _append_plot_point(self, t, r):
+        if t is None:
+            return
+        is_to = (r is None) or (r >= self.timeOut)
+        self._plot_x.append(t)
+        self._plot_y.append(self.timeOut if is_to else r)
+        self._plot_brushes.append(self._b_red if is_to else self._b_green)
+        self._plot_pens.append(self._p_red if is_to else self._p_green)
+        self._plot_len += 1
+
+    def get_plot_arrays(self):
+        """GraphWindow sadece bunu çağırır."""
+        return self._plot_x, self._plot_y, self._plot_brushes, self._plot_pens
+    def get_plot_len(self):
+        return self._plot_len
+
     def get_rtt_curve(self):
         
         if not self._rttList or not self._timeStamp_for_rttList:

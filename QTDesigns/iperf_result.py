@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'QTDesigns/iperf_result.ui'
+# Form implementation generated from reading ui file 'iperf_result.ui'
 #
 # Created by: PyQt5 UI code generator 5.15.11
 #

@@ -146,12 +146,12 @@ class PingThread(threading.Thread):
                             print('\a')
                         print(f"[{self.address}] ✅ {rtt:.2f} ms (icmplib)")
                     else:
-                        self.stats.add_result(self.timeout, time.time() + 10800) #timeout burada saniyeden ms'ye çevirilir
+                        self.stats.add_result(None, time.time() + 10800) #timeout burada saniyeden ms'ye çevirilir
                         print(f"[{self.address}] ❌ Timeout (icmplib)")
                     
                 except Exception as e:
                     print(f"[{self.address}] ⚠️ ICMP ping exception: {e}")
-                    self.stats.add_result(self.timeout, time.time() + 10800)
+                    self.stats.add_result(None, time.time() + 10800)
                 recv_time = time.time()
                 reply_time = recv_time -send_time
                 sleep_time = self.interval_ms# threadin tam olarak interval kadar uyuması için ping atma süresi kadar çıkartıyorum çünkü zaten o kadar zaman geçiyo             
