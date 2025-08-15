@@ -1,0 +1,25 @@
+Format: 1.8
+Date: Fri, 15 Aug 2025 09:20:44 +0300
+Source: monitorclean
+Binary: python3-monitorclean
+Architecture: all
+Version: 0.1.0-1
+Distribution: unstable
+Urgency: low
+Maintainer: None <None>
+Changed-By: None <None>
+Description:
+ python3-monitorclean - MonitorClean GUI
+Changes:
+ monitorclean (0.1.0-1) unstable; urgency=low
+ .
+   * source package automatically created by stdeb 0.8.5
+Checksums-Sha1:
+ 917e48ff6193c0249f147bdfdf5721984b528898 6699 monitorclean_0.1.0-1_amd64.buildinfo
+ 22edd255f1c0c03b477f61a4619dc2492b9e588e 20832 python3-monitorclean_0.1.0-1_all.deb
+Checksums-Sha256:
+ bf78b150238c72245004e4a8b9d275ba6756831f86aca782de3d78fd2714040b 6699 monitorclean_0.1.0-1_amd64.buildinfo
+ 0721ce89208d4973762fea9ee4e4232fd0045a5eb7bd0b8ad2fc6db2d9eacc2f 20832 python3-monitorclean_0.1.0-1_all.deb
+Files:
+ 7365b3ec732953f9f0318d5c09104a26 6699 python optional monitorclean_0.1.0-1_amd64.buildinfo
+ 45ca5ebc17ae96291e8561440a3d1993 20832 python optional python3-monitorclean_0.1.0-1_all.deb

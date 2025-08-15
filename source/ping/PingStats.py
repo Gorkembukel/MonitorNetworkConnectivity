@@ -152,7 +152,7 @@ class PingStats:
     @property
     def average_rtt(self): 
        
-        return self._mean
+        return round(self._mean,2)
     @property
     def min_rtt(self): 
         return self._min

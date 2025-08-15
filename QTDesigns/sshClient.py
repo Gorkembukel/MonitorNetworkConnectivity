@@ -14,7 +14,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(452, 376)
+        MainWindow.resize(452, 408)
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.layoutWidget = QtWidgets.QWidget(self.centralwidget)
@@ -70,7 +70,7 @@ class Ui_MainWindow(object):
         self.pushButton_liveShell.setObjectName("pushButton_liveShell")
         self.horizontalLayout.addWidget(self.pushButton_liveShell)
         self.dockWidget = QtWidgets.QDockWidget(self.centralwidget)
-        self.dockWidget.setGeometry(QtCore.QRect(10, 140, 431, 201))
+        self.dockWidget.setGeometry(QtCore.QRect(10, 140, 431, 231))
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Expanding)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
@@ -92,6 +92,9 @@ class Ui_MainWindow(object):
         self.plainTextEdit = QtWidgets.QPlainTextEdit(self.tab_liveshell)
         self.plainTextEdit.setObjectName("plainTextEdit")
         self.verticalLayout_3.addWidget(self.plainTextEdit)
+        self.lineEdit_entercomand = QtWidgets.QLineEdit(self.tab_liveshell)
+        self.lineEdit_entercomand.setObjectName("lineEdit_entercomand")
+        self.verticalLayout_3.addWidget(self.lineEdit_entercomand)
         self.pushButton_enter = QtWidgets.QPushButton(self.tab_liveshell)
         self.pushButton_enter.setObjectName("pushButton_enter")
         self.verticalLayout_3.addWidget(self.pushButton_enter)
@@ -116,7 +119,7 @@ class Ui_MainWindow(object):
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
-        self.tabWidget.setCurrentIndex(1)
+        self.tabWidget.setCurrentIndex(0)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):

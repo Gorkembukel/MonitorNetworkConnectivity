@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>452</width>
-    <height>376</height>
+    <height>408</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -127,7 +127,7 @@
       <x>10</x>
       <y>140</y>
       <width>431</width>
-      <height>201</height>
+      <height>231</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -156,7 +156,7 @@
       <item>
        <widget class="QTabWidget" name="tabWidget">
         <property name="currentIndex">
-         <number>1</number>
+         <number>0</number>
         </property>
         <widget class="QWidget" name="tab_liveshell">
          <attribute name="title">
@@ -165,6 +165,9 @@
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
            <widget class="QPlainTextEdit" name="plainTextEdit"/>
+          </item>
+          <item>
+           <widget class="QLineEdit" name="lineEdit_entercomand"/>
           </item>
           <item>
            <widget class="QPushButton" name="pushButton_enter">

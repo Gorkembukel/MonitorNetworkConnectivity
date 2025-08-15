@@ -1,0 +1,28 @@
+Format: 1.8
+Date: Fri, 15 Aug 2025 09:20:44 +0300
+Source: monitorclean
+Architecture: source
+Version: 0.1.0-1
+Distribution: unstable
+Urgency: low
+Maintainer: None <None>
+Changed-By: None <None>
+Changes:
+ monitorclean (0.1.0-1) unstable; urgency=low
+ .
+   * source package automatically created by stdeb 0.8.5
+Checksums-Sha1:
+ 424751e802d2622d55f3adc919dcbda50c223243 863 monitorclean_0.1.0-1.dsc
+ cff4f910f3663165d710c97a951711340940db0d 27653 monitorclean_0.1.0.orig.tar.gz
+ 126091fd242088c1f79c8d462830547f21ecdc8b 876 monitorclean_0.1.0-1.debian.tar.xz
+ 9edf8075255fdcfbcd9e738058abfb7a551d774b 6660 monitorclean_0.1.0-1_source.buildinfo
+Checksums-Sha256:
+ 98820d812815f6bea57c4b8b90e9db94f2a6ed6be642f00b4722df1039da595d 863 monitorclean_0.1.0-1.dsc
+ 47a9dd8c649f9a23a449a5e7ca039e801cb36302d4cab7635dc06087e4471b0c 27653 monitorclean_0.1.0.orig.tar.gz
+ f22ece0c0acd423eb44fb2cad038155a019a78cd26d6456cd7756200e65a50e2 876 monitorclean_0.1.0-1.debian.tar.xz
+ b94c6998db611b6cc3a6d5172e1d49a8159091d2243c76f7d14724597ff5e49e 6660 monitorclean_0.1.0-1_source.buildinfo
+Files:
+ b61c9a8802d35a994f3cc0292760437e 863 python optional monitorclean_0.1.0-1.dsc
+ a3a01e0354dea2f2678a59514264772e 27653 python optional monitorclean_0.1.0.orig.tar.gz
+ f8e1e9cc65b8500b0beb7cea630d8246 876 python optional monitorclean_0.1.0-1.debian.tar.xz
+ 2d6df058d71d350ae426b17dd678a147 6660 python optional monitorclean_0.1.0-1_source.buildinfo

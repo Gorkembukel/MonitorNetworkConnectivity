@@ -1,6 +1,6 @@
 # scapy_pinger.py
 
-from scapy.all import ICMP, IP, sr1
+
 import time
 import ipaddress
 import socket
