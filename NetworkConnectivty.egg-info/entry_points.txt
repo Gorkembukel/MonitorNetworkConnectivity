@@ -1,2 +1,0 @@
-[console_scripts]
-monitorclean = test.TEST_newGUI:main
